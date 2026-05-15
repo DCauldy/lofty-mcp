@@ -1,12 +1,14 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
+import { readOnly, createOp } from "../annotations.js";
 
 export function registerTeamFeaturesTools(server: McpServer) {
   server.tool(
     "lofty_list_tags",
     "List all tags configured for the team in Lofty CRM.",
     {},
+    readOnly,
     async (_params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -25,6 +27,7 @@ export function registerTeamFeaturesTools(server: McpServer) {
     "lofty_list_custom_fields",
     "List all custom fields configured for the team in Lofty CRM.",
     {},
+    readOnly,
     async (_params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -48,6 +51,7 @@ export function registerTeamFeaturesTools(server: McpServer) {
       value: z.string().describe("Content/value for the field. For multi-select use JSON array format."),
       params: z.string().optional().describe("Options for select fields (JSON format: {\"option\":[\"item1\",\"item2\"]})"),
     },
+    createOp,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -68,6 +72,7 @@ export function registerTeamFeaturesTools(server: McpServer) {
     "lofty_list_lead_ponds",
     "List all lead ponds configured for the team in Lofty CRM.",
     {},
+    readOnly,
     async (_params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -88,6 +93,7 @@ export function registerTeamFeaturesTools(server: McpServer) {
     {
       id: z.number().describe("Lead pond ID"),
     },
+    readOnly,
     async ({ id }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);

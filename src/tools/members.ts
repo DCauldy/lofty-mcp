@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
+import { readOnly } from "../annotations.js";
 
 export function registerMembersTools(server: McpServer) {
   server.tool(
@@ -11,6 +12,7 @@ export function registerMembersTools(server: McpServer) {
       offset: z.number().optional().describe("Pagination offset"),
       limit: z.number().optional().describe("Results per page (default 25)"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -32,6 +34,7 @@ export function registerMembersTools(server: McpServer) {
     {
       userId: z.number().describe("User ID of the team member"),
     },
+    readOnly,
     async ({ userId }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -52,6 +55,7 @@ export function registerMembersTools(server: McpServer) {
     {
       account: z.string().describe("Login email of the team member"),
     },
+    readOnly,
     async ({ account }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -70,6 +74,7 @@ export function registerMembersTools(server: McpServer) {
     "lofty_get_me",
     "Get the current user's profile from Lofty CRM.",
     {},
+    readOnly,
     async (_params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);

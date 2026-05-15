@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
+import { readOnly, createOp, deleteOp } from "../annotations.js";
 
 export function registerManualLogsTools(server: McpServer) {
   server.tool(
@@ -15,6 +16,7 @@ export function registerManualLogsTools(server: McpServer) {
       sort: z.enum(["createTime", "id"]).optional().describe("Sort field (default: createTime)"),
       order: z.enum(["asc", "desc"]).optional().describe("Sort direction (default: asc)"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -36,6 +38,7 @@ export function registerManualLogsTools(server: McpServer) {
     {
       logTypeId: z.number().describe("The manual log entry ID"),
     },
+    readOnly,
     async ({ logTypeId }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -65,6 +68,7 @@ export function registerManualLogsTools(server: McpServer) {
       toEmail: z.string().optional().describe("Recipient email (for logEmail)"),
       fromEmail: z.string().optional().describe("Sender email (for logEmail)"),
     },
+    createOp,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -87,6 +91,7 @@ export function registerManualLogsTools(server: McpServer) {
     {
       logTypeId: z.number().describe("The manual log entry ID to delete"),
     },
+    deleteOp,
     async (_params, _extra) => {
       return error(new Error(
         "Delete operations are disabled on this MCP server for safety. Please delete this log entry directly in Lofty CRM."

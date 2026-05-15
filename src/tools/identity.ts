@@ -1,11 +1,13 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
+import { readOnly } from "../annotations.js";
 
 export function registerIdentityTools(server: McpServer) {
   server.tool(
     "lofty_get_vendor_info",
     "Get vendor/API identity information from Lofty CRM.",
     {},
+    readOnly,
     async (_params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);

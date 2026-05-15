@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
+import { readOnly, updateOp } from "../annotations.js";
 
 export function registerRoutingTools(server: McpServer) {
   server.tool(
@@ -10,6 +11,7 @@ export function registerRoutingTools(server: McpServer) {
       type: z.number().describe("Routing business type: 1=AGENT_LEAD, 2=LENDING_LEAD, 4=ASSISTANT_LEAD"),
       roleId: z.number().optional().describe("Role ID (required when type=4)"),
     },
+    readOnly,
     async ({ type, roleId }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -29,6 +31,7 @@ export function registerRoutingTools(server: McpServer) {
     "lofty_list_routing_roles",
     "List assign roles for lead routing in Lofty CRM.",
     {},
+    readOnly,
     async (_params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -50,6 +53,7 @@ export function registerRoutingTools(server: McpServer) {
       type: z.number().describe("Routing business type: 1=AGENT_LEAD, 2=LENDING_LEAD, 4=ASSISTANT_LEAD"),
       roleId: z.number().optional().describe("Role ID (required when type=4)"),
     },
+    readOnly,
     async ({ type, roleId }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -72,6 +76,7 @@ export function registerRoutingTools(server: McpServer) {
       type: z.number().describe("Routing business type: 1, 2, or 4"),
       roleId: z.number().optional().describe("Role ID (required when type=4)"),
     },
+    readOnly,
     async ({ type, roleId }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -98,6 +103,7 @@ export function registerRoutingTools(server: McpServer) {
       assigneeAgentId: z.number().optional().describe("Default assignee agent ID"),
       assigneeGroupId: z.number().optional().describe("Default assignee group ID"),
     },
+    updateOp,
     async ({ type, ...body }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);

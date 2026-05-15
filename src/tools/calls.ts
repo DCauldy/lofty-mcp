@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
+import { readOnly } from "../annotations.js";
 
 export function registerCallsTools(server: McpServer) {
   server.tool(
@@ -11,6 +12,7 @@ export function registerCallsTools(server: McpServer) {
       offset: z.number().optional().describe("Pagination offset"),
       limit: z.number().optional().describe("Number of results (default 10)"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -32,6 +34,7 @@ export function registerCallsTools(server: McpServer) {
     {
       callId: z.number().describe("The call ID"),
     },
+    readOnly,
     async ({ callId }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -52,6 +55,7 @@ export function registerCallsTools(server: McpServer) {
     {
       callId: z.number().describe("The call ID"),
     },
+    readOnly,
     async ({ callId }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);

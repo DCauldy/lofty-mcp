@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
+import { readOnly } from "../annotations.js";
 
 export function registerSystemLogsTools(server: McpServer) {
   server.tool(
@@ -13,6 +14,7 @@ export function registerSystemLogsTools(server: McpServer) {
       pageNumber: z.number().optional().describe("Page index (0-based)"),
       pageSize: z.number().optional().describe("Entries per page (default 100)"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);

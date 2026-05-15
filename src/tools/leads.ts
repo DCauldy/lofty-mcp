@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
+import { readOnly, createOp, updateOp, deleteOp } from "../annotations.js";
 
 export function registerLeadsTools(server: McpServer) {
   server.tool(
@@ -24,6 +25,7 @@ export function registerLeadsTools(server: McpServer) {
       languages: z.string().optional().describe("Filter by languages (abbreviation)"),
       scrollId: z.string().optional().describe("Scroll ID for paginating large result sets"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -46,6 +48,7 @@ export function registerLeadsTools(server: McpServer) {
       leadId: z.number().describe("The lead ID to retrieve"),
       withTrash: z.boolean().optional().describe("When true, include trashed leads"),
     },
+    readOnly,
     async ({ leadId, withTrash }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -85,6 +88,7 @@ export function registerLeadsTools(server: McpServer) {
       welcomeEmail: z.boolean().optional().describe("Send welcome email"),
       leadAlert: z.boolean().optional().describe("Send new lead alert email"),
     },
+    createOp,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -123,6 +127,7 @@ export function registerLeadsTools(server: McpServer) {
       language: z.string().optional().describe("Language abbreviation"),
       unsubscription: z.boolean().optional().describe("Unsubscribe from email"),
     },
+    updateOp,
     async (params, extra) => {
       try {
         if (params.tags && params.tags.length === 0) {
@@ -151,6 +156,7 @@ export function registerLeadsTools(server: McpServer) {
     {
       leadId: z.number().describe("The lead ID to delete"),
     },
+    deleteOp,
     async (_params, _extra) => {
       return error(new Error(
         "Delete operations are disabled on this MCP server for safety. Please delete this lead directly in Lofty CRM."
@@ -166,6 +172,7 @@ export function registerLeadsTools(server: McpServer) {
       assignedUserId: z.number().optional().describe("User ID of the agent to assign to"),
       assignedRole: z.string().optional().describe("Role to assign: Agent or Assistant"),
     },
+    updateOp,
     async ({ leadId, ...body }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -192,6 +199,7 @@ export function registerLeadsTools(server: McpServer) {
       limit: z.number().optional().describe("Page size (1-1000, default 10)"),
       timeZoneCode: z.string().optional().describe("IANA timezone (e.g. America/Los_Angeles)"),
     },
+    readOnly,
     async ({ leadId, ...params }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -220,6 +228,7 @@ export function registerLeadsTools(server: McpServer) {
       scheduledDate: z.string().optional().describe("Scheduled date for showing requests"),
       pageName: z.string().optional().describe("Page name of the submission page"),
     },
+    createOp,
     async ({ leadId, ...body }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -247,6 +256,7 @@ export function registerLeadsTools(server: McpServer) {
       bedroomsMin: z.number().optional().describe("Minimum bedrooms"),
       bathroomsMin: z.string().optional().describe("Minimum bathrooms"),
     },
+    createOp,
     async ({ leadId, ...body }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -279,6 +289,7 @@ export function registerLeadsTools(server: McpServer) {
       bathrooms: z.number().optional().describe("Number of bathrooms"),
       squareFeet: z.number().optional().describe("Square footage"),
     },
+    updateOp,
     async ({ leadId, ...body }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -304,6 +315,7 @@ export function registerLeadsTools(server: McpServer) {
       email: z.string().describe("Lead email address"),
       phone: z.string().optional().describe("Lead phone number"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);

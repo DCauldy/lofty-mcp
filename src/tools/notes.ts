@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
+import { readOnly, createOp, updateOp, deleteOp } from "../annotations.js";
 
 export function registerNotesTools(server: McpServer) {
   server.tool(
@@ -10,6 +11,7 @@ export function registerNotesTools(server: McpServer) {
       leadId: z.number().describe("ID of the lead whose notes to return"),
       includeSystemNote: z.boolean().optional().describe("When true, include system-generated notes"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -31,6 +33,7 @@ export function registerNotesTools(server: McpServer) {
     {
       noteId: z.number().describe("The note ID"),
     },
+    readOnly,
     async ({ noteId }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -53,6 +56,7 @@ export function registerNotesTools(server: McpServer) {
       leadId: z.number().describe("ID of the lead this note belongs to"),
       isPin: z.boolean().describe("Whether to pin this note to the top of the timeline"),
     },
+    createOp,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -78,6 +82,7 @@ export function registerNotesTools(server: McpServer) {
       leadId: z.number().describe("ID of the lead this note belongs to"),
       isPin: z.boolean().describe("Whether to pin this note"),
     },
+    updateOp,
     async ({ noteId, ...body }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -100,6 +105,7 @@ export function registerNotesTools(server: McpServer) {
     {
       noteId: z.number().describe("The note ID to delete"),
     },
+    deleteOp,
     async (_params, _extra) => {
       return error(new Error(
         "Delete operations are disabled on this MCP server for safety. Please delete this note directly in Lofty CRM."

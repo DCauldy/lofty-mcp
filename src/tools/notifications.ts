@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
+import { sendMessage } from "../annotations.js";
 
 export function registerNotificationsTools(server: McpServer) {
   server.tool(
@@ -10,6 +11,7 @@ export function registerNotificationsTools(server: McpServer) {
       subject: z.string().describe("Email subject"),
       content: z.string().describe("Email body content (HTML supported)"),
     },
+    sendMessage,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -32,6 +34,7 @@ export function registerNotificationsTools(server: McpServer) {
     {
       content: z.string().describe("SMS content"),
     },
+    sendMessage,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -55,6 +58,7 @@ export function registerNotificationsTools(server: McpServer) {
       taskId: z.number().describe("Task ID or Appointment ID"),
       type: z.enum(["TASK", "APPOINTMENT"]).describe("Type: TASK or APPOINTMENT"),
     },
+    sendMessage,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);

@@ -1,12 +1,14 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
+import { readOnly, createOp, updateOp } from "../annotations.js";
 
 export function registerOrganizationTools(server: McpServer) {
   server.tool(
     "lofty_get_organization",
     "Get organization information from Lofty CRM.",
     {},
+    readOnly,
     async (_params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -33,6 +35,7 @@ export function registerOrganizationTools(server: McpServer) {
       zipcode: z.string().optional().describe("ZIP code"),
       streetAddress: z.string().optional().describe("Street address"),
     },
+    updateOp,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -63,6 +66,7 @@ export function registerOrganizationTools(server: McpServer) {
       streetAddress: z.string().optional().describe("Street address"),
       allowManageSub: z.boolean().optional().describe("Whether members can manage sub-offices"),
     },
+    createOp,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -94,6 +98,7 @@ export function registerOrganizationTools(server: McpServer) {
       streetAddress: z.string().optional().describe("Street address"),
       allowManageSub: z.boolean().optional().describe("Allow sub-office management"),
     },
+    updateOp,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -114,6 +119,7 @@ export function registerOrganizationTools(server: McpServer) {
     "lofty_list_permission_profiles",
     "List permission profiles for the organization in Lofty CRM.",
     {},
+    readOnly,
     async (_params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);

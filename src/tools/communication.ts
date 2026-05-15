@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
+import { readOnly, sendMessage } from "../annotations.js";
 
 export function registerCommunicationTools(server: McpServer) {
   server.tool(
@@ -12,6 +13,7 @@ export function registerCommunicationTools(server: McpServer) {
       leadId: z.number().describe("Lead ID (uses lead's primary email if toEmail not provided)"),
       toEmail: z.string().optional().describe("Specific recipient email address"),
     },
+    sendMessage,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -37,6 +39,7 @@ export function registerCommunicationTools(server: McpServer) {
       phoneNumber: z.string().optional().describe("Specific recipient phone number"),
       phoneCode: z.string().optional().describe("Phone country code"),
     },
+    sendMessage,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -62,6 +65,7 @@ export function registerCommunicationTools(server: McpServer) {
       limit: z.number().optional().describe("Number of results (default 10)"),
       currentId: z.number().optional().describe("Cursor-based pagination anchor"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -86,6 +90,7 @@ export function registerCommunicationTools(server: McpServer) {
       limit: z.number().optional().describe("Number of results (default 10)"),
       currentId: z.number().optional().describe("Cursor-based pagination anchor"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -110,6 +115,7 @@ export function registerCommunicationTools(server: McpServer) {
       limit: z.number().optional().describe("Number of results (default 10)"),
       currentId: z.number().optional().describe("Cursor-based pagination anchor"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -136,6 +142,7 @@ export function registerCommunicationTools(server: McpServer) {
       limit: z.number().optional().describe("Results per page (default 10, max 1000)"),
       teamView: z.boolean().optional().describe("Search team leads' communication (default false)"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -162,6 +169,7 @@ export function registerCommunicationTools(server: McpServer) {
       link: z.string().optional().describe("Companion URL (listing/search/CMA URL)"),
       message: z.string().optional().describe("Optional free-text message"),
     },
+    sendMessage,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);

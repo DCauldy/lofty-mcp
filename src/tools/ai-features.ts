@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
+import { readOnly, createOp } from "../annotations.js";
 
 export function registerAiFeaturesTools(server: McpServer) {
   server.tool(
@@ -10,6 +11,7 @@ export function registerAiFeaturesTools(server: McpServer) {
       pageNum: z.number().optional().describe("Page number (default 1)"),
       pageSize: z.number().optional().describe("Page size (default 10)"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -31,6 +33,7 @@ export function registerAiFeaturesTools(server: McpServer) {
     {
       leadIds: z.array(z.number()).describe("Lead IDs to analyze (cannot be empty)"),
     },
+    createOp,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -54,6 +57,7 @@ export function registerAiFeaturesTools(server: McpServer) {
       leadId: z.number().describe("Lead ID"),
       taskId: z.number().describe("Task ID"),
     },
+    createOp,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -76,6 +80,7 @@ export function registerAiFeaturesTools(server: McpServer) {
     {
       callRecordId: z.number().describe("Call record ID"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -98,6 +103,7 @@ export function registerAiFeaturesTools(server: McpServer) {
       callRecordId: z.number().describe("Call record ID"),
       leadId: z.number().describe("Lead ID"),
     },
+    createOp,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -121,6 +127,7 @@ export function registerAiFeaturesTools(server: McpServer) {
       leadId: z.number().describe("Lead ID"),
       appointmentId: z.number().describe("Appointment ID"),
     },
+    createOp,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);

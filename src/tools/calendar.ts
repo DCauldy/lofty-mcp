@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
+import { readOnly, createOp, updateOp, deleteOp } from "../annotations.js";
 
 export function registerCalendarTools(server: McpServer) {
   server.tool(
@@ -20,6 +21,7 @@ export function registerCalendarTools(server: McpServer) {
       desc: z.boolean().optional().describe("Descending sort (default: true)"),
       sourceType: z.string().optional().describe("Filter by source type codes"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -51,6 +53,7 @@ export function registerCalendarTools(server: McpServer) {
       assignedRole: z.string().optional().describe("Assigned role: Agent or Assistant (only for TASK type)"),
       address: z.string().optional().describe("Location/address (only for APPOINTMENT type)"),
     },
+    createOp,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -81,6 +84,7 @@ export function registerCalendarTools(server: McpServer) {
       leadId: z.number().optional().describe("Updated lead ID"),
       address: z.string().optional().describe("Updated address (for APPOINTMENT)"),
     },
+    updateOp,
     async ({ calendarId, ...body }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -103,6 +107,7 @@ export function registerCalendarTools(server: McpServer) {
     {
       calendarId: z.string().describe("Composite calendar ID"),
     },
+    deleteOp,
     async (_params, _extra) => {
       return error(new Error(
         "Delete operations are disabled on this MCP server for safety. Please delete this calendar event directly in Lofty CRM."
@@ -116,6 +121,7 @@ export function registerCalendarTools(server: McpServer) {
     {
       calendarId: z.string().describe("Composite calendar ID (e.g. '12345-task' or '12345-appointment')"),
     },
+    updateOp,
     async ({ calendarId }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -137,6 +143,7 @@ export function registerCalendarTools(server: McpServer) {
     {
       calendarId: z.string().describe("Composite calendar ID"),
     },
+    updateOp,
     async ({ calendarId }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -163,6 +170,7 @@ export function registerCalendarTools(server: McpServer) {
       timeZoneCode: z.string().optional().describe("IANA timezone"),
       limit: z.number().optional().describe("Max number of slots to return (default 10)"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);

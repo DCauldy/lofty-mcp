@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
+import { readOnly, createOp, updateOp, deleteOp } from "../annotations.js";
 
 export function registerTasksV2Tools(server: McpServer) {
   server.tool(
@@ -9,6 +10,7 @@ export function registerTasksV2Tools(server: McpServer) {
     {
       leadId: z.number().describe("ID of the lead whose tasks to return"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -30,6 +32,7 @@ export function registerTasksV2Tools(server: McpServer) {
     {
       taskId: z.number().describe("The task or appointment ID"),
     },
+    readOnly,
     async ({ taskId }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -57,6 +60,7 @@ export function registerTasksV2Tools(server: McpServer) {
       timeZoneCode: z.string().optional().describe("Timezone code (e.g. America/Los_Angeles)"),
       address: z.string().optional().describe("Location/address (for Appointment type)"),
     },
+    createOp,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -84,6 +88,7 @@ export function registerTasksV2Tools(server: McpServer) {
       timeZoneCode: z.string().optional().describe("Updated timezone code"),
       address: z.string().optional().describe("Updated address (for Appointment)"),
     },
+    updateOp,
     async ({ taskId, ...body }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -106,6 +111,7 @@ export function registerTasksV2Tools(server: McpServer) {
     {
       taskId: z.number().describe("The task or appointment ID to delete"),
     },
+    deleteOp,
     async (_params, _extra) => {
       return error(new Error(
         "Delete operations are disabled on this MCP server for safety. Please delete this task directly in Lofty CRM."
@@ -119,6 +125,7 @@ export function registerTasksV2Tools(server: McpServer) {
     {
       taskId: z.number().describe("The task or appointment ID to finish"),
     },
+    updateOp,
     async ({ taskId }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -140,6 +147,7 @@ export function registerTasksV2Tools(server: McpServer) {
     {
       taskId: z.number().describe("The task or appointment ID to unfinish"),
     },
+    updateOp,
     async ({ taskId }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -164,6 +172,7 @@ export function registerTasksV2Tools(server: McpServer) {
       limit: z.number().optional().describe("Page size (1-100, default 10)"),
       timeZoneCode: z.string().optional().describe("IANA timezone code"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);

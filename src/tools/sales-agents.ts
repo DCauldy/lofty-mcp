@@ -1,12 +1,14 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
+import { readOnly, createOp, updateOp, sendMessage } from "../annotations.js";
 
 export function registerSalesAgentsTools(server: McpServer) {
   server.tool(
     "lofty_get_current_sales_agent",
     "Get the current user's Sales Agent profile in Lofty CRM.",
     {},
+    readOnly,
     async (_params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -27,6 +29,7 @@ export function registerSalesAgentsTools(server: McpServer) {
     {
       leadId: z.number().describe("Lead ID"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -46,6 +49,7 @@ export function registerSalesAgentsTools(server: McpServer) {
     "lofty_get_sales_agent_quota",
     "Get the current user's Sales Agent quota in Lofty CRM.",
     {},
+    readOnly,
     async (_params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -70,6 +74,7 @@ export function registerSalesAgentsTools(server: McpServer) {
       sort: z.string().optional().describe("Sort field: Default, CreateTime, UpdateTime"),
       desc: z.string().optional().describe("Descending sort (default true)"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -91,6 +96,7 @@ export function registerSalesAgentsTools(server: McpServer) {
     {
       leadId: z.number().describe("Lead ID"),
     },
+    readOnly,
     async ({ leadId }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -112,6 +118,7 @@ export function registerSalesAgentsTools(server: McpServer) {
       leadIds: z.array(z.number()).describe("Lead IDs to add (max 100)"),
       createPlanTask: z.boolean().optional().describe("Whether to create plan tasks for each lead"),
     },
+    createOp,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -134,6 +141,7 @@ export function registerSalesAgentsTools(server: McpServer) {
     {
       leadId: z.number().describe("Lead ID to mute"),
     },
+    updateOp,
     async ({ leadId }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -153,6 +161,7 @@ export function registerSalesAgentsTools(server: McpServer) {
     "lofty_get_sales_agent_settings",
     "Get Sales Agent settings in Lofty CRM.",
     {},
+    readOnly,
     async (_params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -185,6 +194,7 @@ export function registerSalesAgentsTools(server: McpServer) {
       visitorsEnable: z.boolean().optional().describe("Visitor follow-up enabled"),
       followUpRole: z.string().optional().describe("Follow up role: AI or Agent"),
     },
+    updateOp,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -207,6 +217,7 @@ export function registerSalesAgentsTools(server: McpServer) {
     {
       leadId: z.number().describe("Lead ID"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -228,6 +239,7 @@ export function registerSalesAgentsTools(server: McpServer) {
     {
       leadId: z.number().describe("Lead ID"),
     },
+    readOnly,
     async ({ leadId }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -248,6 +260,7 @@ export function registerSalesAgentsTools(server: McpServer) {
     {
       leadIds: z.array(z.number()).describe("Lead IDs to create plan tasks for (max 100)"),
     },
+    createOp,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -270,6 +283,7 @@ export function registerSalesAgentsTools(server: McpServer) {
     {
       content: z.string().describe("SMS content to send"),
     },
+    sendMessage,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);

@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
+import { readOnly, createOp, updateOp } from "../annotations.js";
 
 export function registerTransactionsTools(server: McpServer) {
   server.tool(
@@ -9,6 +10,7 @@ export function registerTransactionsTools(server: McpServer) {
     {
       leadId: z.number().describe("Lead ID whose transactions to return"),
     },
+    readOnly,
     async ({ leadId }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -30,6 +32,7 @@ export function registerTransactionsTools(server: McpServer) {
       leadId: z.number().describe("Lead ID"),
       transactionId: z.number().describe("Transaction ID"),
     },
+    readOnly,
     async ({ leadId, transactionId }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -60,6 +63,7 @@ export function registerTransactionsTools(server: McpServer) {
       teamRevenue: z.number().optional().describe("Team's portion of GCI"),
       agentRevenue: z.number().optional().describe("Agent's portion of GCI"),
     },
+    createOp,
     async ({ leadId, ...body }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -91,6 +95,7 @@ export function registerTransactionsTools(server: McpServer) {
       commissionRate: z.number().optional().describe("Commission rate"),
       gci: z.number().optional().describe("GCI"),
     },
+    updateOp,
     async ({ leadId, transactionId, ...body }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -114,6 +119,7 @@ export function registerTransactionsTools(server: McpServer) {
       leadId: z.number().describe("Lead ID"),
       transactionId: z.number().describe("Transaction ID"),
     },
+    readOnly,
     async ({ leadId, transactionId }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -142,6 +148,7 @@ export function registerTransactionsTools(server: McpServer) {
       unit: z.string().optional().describe("Unit/apartment number"),
       label: z.string().optional().describe("Address label"),
     },
+    updateOp,
     async ({ leadId, transactionId, ...body }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -167,6 +174,7 @@ export function registerTransactionsTools(server: McpServer) {
       pageSize: z.number().optional().describe("Page size (1-100, default 20)"),
       pageNum: z.number().optional().describe("Page number (0-based)"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -186,6 +194,7 @@ export function registerTransactionsTools(server: McpServer) {
     "lofty_list_transaction_custom_fields",
     "List transaction custom fields configured for the team in Lofty CRM.",
     {},
+    readOnly,
     async (_params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);

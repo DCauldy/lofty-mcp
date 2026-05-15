@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
+import { readOnly } from "../annotations.js";
 
 export function registerListingsTools(server: McpServer) {
   server.tool(
@@ -9,6 +10,7 @@ export function registerListingsTools(server: McpServer) {
     {
       type: z.enum(["LuxVT", "AptCom", "AllOnMarket"]).describe("Feed variant to emit"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -36,6 +38,7 @@ export function registerListingsTools(server: McpServer) {
       agentListings: z.boolean().optional().describe("Include agent listings"),
       nextPageKey: z.string().optional().describe("Pagination key for next page"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -62,6 +65,7 @@ export function registerListingsTools(server: McpServer) {
       pageNum: z.number().optional().describe("Page number (starting from 1)"),
       pageSize: z.number().optional().describe("Page size (1-100, default 25)"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);

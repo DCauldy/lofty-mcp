@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
+import { readOnly, createOp, updateOp, deleteOp } from "../annotations.js";
 
 export function registerTasksTools(server: McpServer) {
   server.tool(
@@ -9,6 +10,7 @@ export function registerTasksTools(server: McpServer) {
     {
       leadId: z.number().describe("ID of the lead whose tasks to return"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -30,6 +32,7 @@ export function registerTasksTools(server: McpServer) {
     {
       taskId: z.number().describe("The task ID"),
     },
+    readOnly,
     async ({ taskId }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -54,6 +57,7 @@ export function registerTasksTools(server: McpServer) {
       type: z.enum(["Other", "Call", "Email", "Text"]).describe("Task type"),
       assignedRole: z.enum(["Agent", "Assistant"]).describe("Role the task is assigned to"),
     },
+    createOp,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -82,6 +86,7 @@ export function registerTasksTools(server: McpServer) {
       assignedRole: z.enum(["Agent", "Assistant"]).optional().describe("Assigned role"),
       finishFlag: z.boolean().optional().describe("When true, marks the task as completed"),
     },
+    updateOp,
     async ({ taskId, ...body }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -104,6 +109,7 @@ export function registerTasksTools(server: McpServer) {
     {
       taskId: z.number().describe("The task ID to delete"),
     },
+    deleteOp,
     async (_params, _extra) => {
       return error(new Error(
         "Delete operations are disabled on this MCP server for safety. Please delete this task directly in Lofty CRM."
@@ -117,6 +123,7 @@ export function registerTasksTools(server: McpServer) {
     {
       leadId: z.number().describe("ID of the lead whose appointments to return"),
     },
+    readOnly,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);

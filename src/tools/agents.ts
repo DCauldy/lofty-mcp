@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
+import { createOp } from "../annotations.js";
 
 export function registerAgentsTools(server: McpServer) {
   server.tool(
@@ -16,6 +17,7 @@ export function registerAgentsTools(server: McpServer) {
       }).describe("Account information"),
       hasBackOffice: z.boolean().optional().describe("Whether agent has back office access"),
     },
+    createOp,
     async (params, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
@@ -40,6 +42,7 @@ export function registerAgentsTools(server: McpServer) {
       tagNames: z.array(z.string()).optional().describe("Tag names to add (up to 20 per call)"),
       autoCreate: z.boolean().optional().describe("When true, unknown tag names are created automatically"),
     },
+    createOp,
     async ({ agentId, ...body }, extra) => {
       try {
         const authOpts = getLoftyAuthOptions(extra.authInfo);
