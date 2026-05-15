@@ -23,21 +23,6 @@ export interface RequestOptions {
   accessToken?: string;
 }
 
-/**
- * Extracts the Lofty API key from MCP AuthInfo (populated in hosted/OAuth mode).
- * Returns undefined when running in stdio mode (no authInfo present).
- * Kept for backward compat with stdio mode.
- */
-export function getApiKeyFromAuth(authInfo?: AuthInfo): string | undefined {
-  return authInfo?.extra?.loftyApiKey as string | undefined;
-}
-
-/**
- * Returns auth options for loftyRequest() based on the auth type in MCP AuthInfo.
- * - For OAuth: returns { accessToken }
- * - For API key: returns { apiKey }
- * - For stdio mode (no authInfo): returns {} (uses LOFTY_API_KEY env var)
- */
 export function getLoftyAuthOptions(authInfo?: AuthInfo): { apiKey?: string; accessToken?: string } {
   if (!authInfo?.extra) return {};
   const authType = authInfo.extra.authType as string | undefined;
@@ -65,11 +50,15 @@ export async function loftyRequest(options: RequestOptions): Promise<unknown> {
     Accept: "application/json",
   };
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+
   const response = await fetch(url.toString(), {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
-  });
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeout));
 
   if (response.status === 204) {
     return { success: true };

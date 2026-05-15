@@ -47,7 +47,7 @@ import { AIM_FAVICON_BUF, AIM_LOGO_SVG, LOFTY_LOGO_SVG } from "./branding.js";
  * Creates a fresh McpServer instance with all tools registered.
  * Called per-request because Vercel serverless functions are ephemeral.
  */
-function createMcpServer(): McpServer {
+export function createMcpServer(): McpServer {
   const server = new McpServer({
     name: "lofty",
     version: "1.0.0",
