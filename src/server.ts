@@ -184,6 +184,13 @@ app.use(
 
 // Custom callback endpoint: validates Lofty API key, stores auth code, redirects
 app.post("/auth/callback", rateLimiter("auth-callback", 10, 300), express.urlencoded({ extended: false }), async (req, res) => {
+  res.on("finish", () => {
+    logger.info("Request completed", {
+      ...logger.fromReq(req),
+      statusCode: res.statusCode,
+      durationMs: req.startTime ? Date.now() - req.startTime : undefined,
+    });
+  });
   try {
     const { apiKey, client_id, redirect_uri, code_challenge, state } = req.body;
 
@@ -243,14 +250,6 @@ app.post("/auth/callback", rateLimiter("auth-callback", 10, 300), express.urlenc
     if (state) redirectUrl.searchParams.set("state", state);
 
     res.redirect(302, redirectUrl.toString());
-
-    res.on("finish", () => {
-      logger.info("Request completed", {
-        ...logger.fromReq(req),
-        statusCode: res.statusCode,
-        durationMs: req.startTime ? Date.now() - req.startTime : undefined,
-      });
-    });
   } catch (err) {
     logger.error("Auth callback error", { ...logger.fromReq(req), error: String(err) });
     res.status(500).send("Internal server error during authentication. Please try again.");
@@ -261,6 +260,13 @@ app.post("/auth/callback", rateLimiter("auth-callback", 10, 300), express.urlenc
 
 // Step 1: Start Lofty OAuth flow — persist MCP state, redirect to Lofty
 app.get("/oauth/start", rateLimiter("oauth-start", 10, 300), async (req, res) => {
+  res.on("finish", () => {
+    logger.info("Request completed", {
+      ...logger.fromReq(req),
+      statusCode: res.statusCode,
+      durationMs: req.startTime ? Date.now() - req.startTime : undefined,
+    });
+  });
   try {
     const { client_id, redirect_uri, code_challenge, state } = req.query as Record<string, string>;
     const loftyOAuthClientId = process.env.LOFTY_OAUTH_CLIENT_ID;
@@ -292,14 +298,6 @@ app.get("/oauth/start", rateLimiter("oauth-start", 10, 300), async (req, res) =>
     loftyAuthUrl.searchParams.set("state", sessionId);
 
     res.redirect(302, loftyAuthUrl.toString());
-
-    res.on("finish", () => {
-      logger.info("Request completed", {
-        ...logger.fromReq(req),
-        statusCode: res.statusCode,
-        durationMs: req.startTime ? Date.now() - req.startTime : undefined,
-      });
-    });
   } catch (err) {
     logger.error("OAuth start error", { ...logger.fromReq(req), error: String(err) });
     res.status(500).send("Internal server error. Please try again.");
@@ -308,6 +306,13 @@ app.get("/oauth/start", rateLimiter("oauth-start", 10, 300), async (req, res) =>
 
 // Step 2: Lofty redirects back here with auth code — exchange for tokens, complete MCP flow
 app.get("/oauth/callback", rateLimiter("oauth-callback", 10, 300), async (req, res) => {
+  res.on("finish", () => {
+    logger.info("Request completed", {
+      ...logger.fromReq(req),
+      statusCode: res.statusCode,
+      durationMs: req.startTime ? Date.now() - req.startTime : undefined,
+    });
+  });
   try {
     const { code: loftyCode, state: sessionId } = req.query as Record<string, string>;
 
@@ -412,14 +417,6 @@ h1{color:#c00;margin-bottom:12px;} p{color:#666;}</style></head>
     if (mcpSession.state) redirectUrl.searchParams.set("state", mcpSession.state);
 
     res.redirect(302, redirectUrl.toString());
-
-    res.on("finish", () => {
-      logger.info("Request completed", {
-        ...logger.fromReq(req),
-        statusCode: res.statusCode,
-        durationMs: req.startTime ? Date.now() - req.startTime : undefined,
-      });
-    });
   } catch (err) {
     logger.error("OAuth callback error", { ...logger.fromReq(req), error: String(err) });
     res.status(500).send("Internal server error during OAuth callback. Please try again.");
@@ -431,6 +428,13 @@ const bearerAuth = requireBearerAuth({ verifier: provider });
 
 // MCP endpoint — stateless: new transport + server per request
 app.all("/mcp", bearerAuth, async (req, res) => {
+  res.on("finish", () => {
+    logger.info("Request completed", {
+      ...logger.fromReq(req),
+      statusCode: res.statusCode,
+      durationMs: req.startTime ? Date.now() - req.startTime : undefined,
+    });
+  });
   try {
     const server = createMcpServer();
     const transport = new StreamableHTTPServerTransport({
@@ -443,14 +447,6 @@ app.all("/mcp", bearerAuth, async (req, res) => {
     res.on("close", () => {
       transport.close().catch(() => {});
       server.close().catch(() => {});
-    });
-
-    res.on("finish", () => {
-      logger.info("Request completed", {
-        ...logger.fromReq(req),
-        statusCode: res.statusCode,
-        durationMs: req.startTime ? Date.now() - req.startTime : undefined,
-      });
     });
   } catch (err) {
     logger.error("MCP request error", { ...logger.fromReq(req), error: String(err) });
