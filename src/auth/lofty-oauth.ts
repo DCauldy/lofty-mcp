@@ -21,6 +21,9 @@ export async function refreshLoftyAccessToken(refreshToken: string): Promise<Lof
     grant_type: "refresh_token",
     refresh_token: refreshToken,
   });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+
   const res = await fetch("https://crm.lofty.com/api/user-web/oauth/token", {
     method: "POST",
     headers: {
@@ -28,7 +31,8 @@ export async function refreshLoftyAccessToken(refreshToken: string): Promise<Lof
       Authorization: `Basic ${basicAuth}`,
     },
     body: formBody.toString(),
-  });
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeout));
 
   if (!res.ok) {
     const text = await res.text();
