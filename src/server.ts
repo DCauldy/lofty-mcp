@@ -4,10 +4,17 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { mcpAuthRouter } from "@modelcontextprotocol/sdk/server/auth/router.js";
 import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
+import { randomUUID } from "node:crypto";
 
 import { LoftyOAuthProvider } from "./auth/provider.js";
 import { encrypt } from "./auth/crypto.js";
-import { saveAuthCode, generateAuthCode } from "./auth/store.js";
+import {
+  saveAuthCode,
+  generateAuthCode,
+  saveOAuthSession,
+  getOAuthSession,
+  deleteOAuthSession,
+} from "./auth/store.js";
 import { getAuthorizePage } from "./auth/pages.js";
 
 import { registerLeadsTools } from "./tools/leads.js";
@@ -31,6 +38,7 @@ import { registerAiFeaturesTools } from "./tools/ai-features.js";
 import { registerSalesAgentsTools } from "./tools/sales-agents.js";
 import { registerNotificationsTools } from "./tools/notifications.js";
 import { registerIdentityTools } from "./tools/identity.js";
+import { AIM_FAVICON_BUF, AIM_LOGO_SVG, LOFTY_LOGO_SVG } from "./branding.js";
 
 /**
  * Creates a fresh McpServer instance with all tools registered.
@@ -78,6 +86,28 @@ app.use(cors());
 // Health check
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", server: "lofty-mcp" });
+});
+
+// AiM branding assets (must be public, no auth)
+app.get("/favicon.png", (_req, res) => {
+  res.setHeader("Content-Type", "image/png");
+  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.send(AIM_FAVICON_BUF);
+});
+app.get("/favicon.ico", (_req, res) => {
+  res.setHeader("Content-Type", "image/png");
+  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.send(AIM_FAVICON_BUF);
+});
+app.get("/logo.svg", (_req, res) => {
+  res.setHeader("Content-Type", "image/svg+xml");
+  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.send(AIM_LOGO_SVG);
+});
+app.get("/product-logo.svg", (_req, res) => {
+  res.setHeader("Content-Type", "image/svg+xml");
+  res.setHeader("Cache-Control", "public, max-age=86400");
+  res.send(LOFTY_LOGO_SVG);
 });
 
 // OAuth metadata with logo_uri (registered before mcpAuthRouter so it takes priority)
@@ -142,6 +172,7 @@ app.post("/auth/callback", express.urlencoded({ extended: false }), async (req, 
       redirectUri: redirect_uri,
       codeChallenge: code_challenge,
       encryptedApiKey,
+      authType: "apikey",
       state,
     });
 
@@ -155,6 +186,161 @@ app.post("/auth/callback", express.urlencoded({ extended: false }), async (req, 
     const message = err instanceof Error ? err.message : String(err);
     console.error("Auth callback error:", message, err);
     res.status(500).send(`Internal server error during authentication: ${message}`);
+  }
+});
+
+// ─── Lofty OAuth routes ───
+
+// Step 1: Start Lofty OAuth flow — persist MCP state, redirect to Lofty
+app.get("/oauth/start", async (req, res) => {
+  try {
+    const { client_id, redirect_uri, code_challenge, state } = req.query as Record<string, string>;
+    const loftyOAuthClientId = process.env.LOFTY_OAUTH_CLIENT_ID;
+
+    if (!loftyOAuthClientId) {
+      res.status(500).send("Lofty OAuth is not configured on this server.");
+      return;
+    }
+
+    if (!client_id || !redirect_uri || !code_challenge) {
+      res.status(400).send("Missing required OAuth parameters.");
+      return;
+    }
+
+    // Save MCP OAuth state so we can recover it after Lofty redirects back
+    const sessionId = randomUUID();
+    await saveOAuthSession(sessionId, {
+      clientId: client_id,
+      redirectUri: redirect_uri,
+      codeChallenge: code_challenge,
+      state,
+    });
+
+    // Redirect to Lofty OAuth authorization
+    const loftyAuthUrl = new URL("https://crm.lofty.com/page/vendor-auth.html");
+    loftyAuthUrl.searchParams.set("clientId", loftyOAuthClientId);
+    loftyAuthUrl.searchParams.set("response_type", "code");
+    loftyAuthUrl.searchParams.set("redirect_uri", `${serverUrl}/oauth/callback`);
+    loftyAuthUrl.searchParams.set("state", sessionId);
+
+    res.redirect(302, loftyAuthUrl.toString());
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("OAuth start error:", message, err);
+    res.status(500).send(`Internal server error: ${message}`);
+  }
+});
+
+// Step 2: Lofty redirects back here with auth code — exchange for tokens, complete MCP flow
+app.get("/oauth/callback", async (req, res) => {
+  try {
+    const { code: loftyCode, state: sessionId } = req.query as Record<string, string>;
+
+    // Handle missing code (denial or error)
+    if (!loftyCode) {
+      res.status(400).send(`<!DOCTYPE html>
+<html><head><title>Authorization Denied</title>
+<style>body{font-family:-apple-system,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#f5f5f5;}
+.card{background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:40px;max-width:440px;text-align:center;}
+h1{color:#c00;margin-bottom:12px;} p{color:#666;}</style></head>
+<body><div class="card"><h1>Authorization Denied</h1>
+<p>You declined to authorize this application in Lofty. You can close this window and try again.</p></div></body></html>`);
+      return;
+    }
+
+    if (!sessionId) {
+      res.status(400).send("Missing session state parameter.");
+      return;
+    }
+
+    // Recover MCP OAuth state from Redis
+    const mcpSession = await getOAuthSession(sessionId);
+    if (!mcpSession) {
+      res.status(400).send("OAuth session expired or invalid. Please try connecting again.");
+      return;
+    }
+    await deleteOAuthSession(sessionId);
+
+    const loftyOAuthClientId = process.env.LOFTY_OAUTH_CLIENT_ID;
+    const loftyOAuthClientSecret = process.env.LOFTY_OAUTH_CLIENT_SECRET;
+    if (!loftyOAuthClientId || !loftyOAuthClientSecret) {
+      res.status(500).send("Lofty OAuth is not configured on this server.");
+      return;
+    }
+
+    // Exchange Lofty auth code for Lofty tokens
+    const basicAuth = Buffer.from(`${loftyOAuthClientId}:${loftyOAuthClientSecret}`).toString("base64");
+    const tokenBody = new URLSearchParams({
+      grant_type: "authorization_code",
+      code: loftyCode,
+      redirect_uri: `${serverUrl}/oauth/callback`,
+      client_id: loftyOAuthClientId,
+    });
+    const tokenRes = await fetch("https://crm.lofty.com/api/user-web/oauth/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Basic ${basicAuth}`,
+      },
+      body: tokenBody.toString(),
+    });
+
+    if (!tokenRes.ok) {
+      const errText = await tokenRes.text();
+      console.error("Lofty token exchange failed:", tokenRes.status, errText);
+      res.status(500).send("Failed to exchange authorization code with Lofty. Please try again.");
+      return;
+    }
+
+    const loftyTokens = (await tokenRes.json()) as {
+      access_token: string;
+      refresh_token: string;
+      expires_in: number;
+    };
+
+    // Verify the token works by calling /v1.0/me
+    const meRes = await fetch("https://api.lofty.com/v1.0/me", {
+      headers: {
+        Authorization: `Bearer ${loftyTokens.access_token}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!meRes.ok) {
+      console.error("Lofty /me check failed:", meRes.status);
+      res.status(500).send("Failed to verify Lofty authorization. Please try again.");
+      return;
+    }
+
+    // Encrypt Lofty tokens and generate MCP auth code
+    const loftyTokenData = {
+      accessToken: loftyTokens.access_token,
+      refreshToken: loftyTokens.refresh_token,
+      expiresAt: Math.floor(Date.now() / 1000) + loftyTokens.expires_in,
+    };
+    const encryptedLoftyTokens = encrypt(JSON.stringify(loftyTokenData));
+    const mcpCode = generateAuthCode();
+
+    await saveAuthCode(mcpCode, {
+      clientId: mcpSession.clientId,
+      redirectUri: mcpSession.redirectUri,
+      codeChallenge: mcpSession.codeChallenge,
+      encryptedApiKey: "", // Not used for OAuth flow
+      encryptedLoftyTokens,
+      authType: "oauth",
+      state: mcpSession.state,
+    });
+
+    // Redirect back to Claude's redirect_uri with MCP auth code
+    const redirectUrl = new URL(mcpSession.redirectUri);
+    redirectUrl.searchParams.set("code", mcpCode);
+    if (mcpSession.state) redirectUrl.searchParams.set("state", mcpSession.state);
+
+    res.redirect(302, redirectUrl.toString());
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("OAuth callback error:", message, err);
+    res.status(500).send(`Internal server error during OAuth callback: ${message}`);
   }
 });
 
@@ -193,6 +379,8 @@ app.get("/", (_req, res) => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lofty CRM MCP Server</title>
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="apple-touch-icon" href="/favicon.png" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -225,6 +413,11 @@ app.get("/", (_req, res) => {
 </head>
 <body>
   <div class="card">
+    <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 24px;">
+      <img src="/logo.svg" alt="AiM Marketing Academy" style="height: 44px;" />
+      <span style="font-size: 22px; color: #bbb; font-weight: 300;">&times;</span>
+      <img src="/product-logo.svg" alt="Lofty CRM" style="height: 32px;" />
+    </div>
     <span class="status">Online</span>
     <h1>Lofty CRM MCP Server</h1>
     <p class="subtitle">This is a Model Context Protocol (MCP) server that connects Claude to your Lofty CRM account. It provides 90+ tools for managing leads, tasks, transactions, communications, and more.</p>
@@ -233,7 +426,7 @@ app.get("/", (_req, res) => {
       <li>Open <strong>Claude Desktop</strong> &rarr; Settings &rarr; MCP Servers</li>
       <li>Click <strong>Add Custom Connector</strong></li>
       <li>Enter the server URL: <code>${serverUrl}/mcp</code></li>
-      <li>Complete the OAuth flow by entering your <strong>Lofty API key</strong></li>
+      <li>Complete the OAuth flow by <strong>signing in with Lofty</strong> or entering your <strong>Lofty API key</strong></li>
     </ol>
     <div class="footer">
       <a href="https://developer.lofty.com" target="_blank">Lofty API Documentation</a>

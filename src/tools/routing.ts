@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { loftyRequest, success, error, getApiKeyFromAuth } from "../client.js";
+import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
 
 export function registerRoutingTools(server: McpServer) {
   server.tool(
@@ -12,11 +12,11 @@ export function registerRoutingTools(server: McpServer) {
     },
     async ({ type, roleId }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: `/v1.0/routing/member/list/${type}`,
           params: roleId !== undefined ? { roleId } : undefined,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -31,10 +31,10 @@ export function registerRoutingTools(server: McpServer) {
     {},
     async (_params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v1.0/routing/role/list",
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -52,11 +52,11 @@ export function registerRoutingTools(server: McpServer) {
     },
     async ({ type, roleId }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: `/v1.0/routing/rule/list/${type}`,
           params: roleId !== undefined ? { roleId } : undefined,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -74,11 +74,11 @@ export function registerRoutingTools(server: McpServer) {
     },
     async ({ type, roleId }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: `/v1.0/routing/rule/supplement/${type}`,
           params: roleId !== undefined ? { roleId } : undefined,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -100,12 +100,12 @@ export function registerRoutingTools(server: McpServer) {
     },
     async ({ type, ...body }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "PUT",
           path: `/v1.0/routing/rule/supplement/${type}`,
           body,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {

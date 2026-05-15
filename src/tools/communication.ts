@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { loftyRequest, success, error, getApiKeyFromAuth } from "../client.js";
+import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
 
 export function registerCommunicationTools(server: McpServer) {
   server.tool(
@@ -14,12 +14,12 @@ export function registerCommunicationTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: "/v1.0/message/email/send",
           body: params,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -39,12 +39,12 @@ export function registerCommunicationTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: "/v1.0/message/sms/send",
           body: params,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -64,11 +64,11 @@ export function registerCommunicationTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v1.0/communication/call/v2",
           params: params as Record<string, string | number | boolean | undefined>,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -88,11 +88,11 @@ export function registerCommunicationTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v1.0/communication/email",
           params: params as Record<string, string | number | boolean | undefined>,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -112,11 +112,11 @@ export function registerCommunicationTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v1.0/communication/text",
           params: params as Record<string, string | number | boolean | undefined>,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -138,12 +138,12 @@ export function registerCommunicationTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: "/v1.0/agent/communication",
           body: params,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -164,12 +164,12 @@ export function registerCommunicationTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: "/v1.0/agent/send-notification",
           body: params,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {

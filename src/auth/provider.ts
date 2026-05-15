@@ -8,7 +8,8 @@ import type {
   OAuthTokenRevocationRequest,
 } from "@modelcontextprotocol/sdk/shared/auth.js";
 import { randomUUID } from "node:crypto";
-import { encrypt, decrypt } from "./crypto.js";
+import { decrypt } from "./crypto.js";
+import { maybeRefreshLoftyTokens } from "./lofty-oauth.js";
 import {
   saveClient,
   getClient,
@@ -49,8 +50,9 @@ class KvClientsStore implements OAuthRegisteredClientsStore {
 
 /**
  * OAuth server provider for the Lofty MCP server.
- * Implements a custom flow where users enter their Lofty API key
- * during the OAuth authorization step.
+ * Supports two auth methods:
+ * - API key: user enters their Lofty API key directly
+ * - OAuth: user signs in via Lofty OAuth ("Sign in with Lofty")
  */
 export class LoftyOAuthProvider implements OAuthServerProvider {
   readonly clientsStore = new KvClientsStore();
@@ -60,11 +62,27 @@ export class LoftyOAuthProvider implements OAuthServerProvider {
     params: AuthorizationParams,
     res: Response
   ): Promise<void> {
+    const serverUrl = (process.env.SERVER_URL || "http://localhost:3000").trim();
+    const loftyOAuthClientId = process.env.LOFTY_OAUTH_CLIENT_ID;
+
+    // Build the /oauth/start URL if Lofty OAuth is configured
+    let oauthStartUrl: string | undefined;
+    if (loftyOAuthClientId) {
+      const startUrl = new URL(`${serverUrl}/oauth/start`);
+      startUrl.searchParams.set("client_id", client.client_id);
+      startUrl.searchParams.set("redirect_uri", params.redirectUri);
+      startUrl.searchParams.set("code_challenge", params.codeChallenge);
+      if (params.state) startUrl.searchParams.set("state", params.state);
+      oauthStartUrl = startUrl.toString();
+    }
+
     const html = getAuthorizePage(
       client.client_id,
       params.redirectUri,
       params.state,
-      params.codeChallenge
+      params.codeChallenge,
+      undefined,
+      oauthStartUrl
     );
     res.setHeader("Content-Type", "text/html");
     res.end(html);
@@ -93,6 +111,7 @@ export class LoftyOAuthProvider implements OAuthServerProvider {
     // Clean up the auth code (single use)
     await deleteAuthCode(authorizationCode);
 
+    const authType = data.authType || "apikey";
     const accessToken = generateToken();
     const refreshToken = generateToken();
     const expiresIn = 3600; // 1 hour
@@ -100,6 +119,8 @@ export class LoftyOAuthProvider implements OAuthServerProvider {
     await saveAccessToken(accessToken, {
       clientId: data.clientId,
       encryptedApiKey: data.encryptedApiKey,
+      encryptedLoftyTokens: data.encryptedLoftyTokens,
+      authType,
       scopes: [],
       expiresAt: Math.floor(Date.now() / 1000) + expiresIn,
     });
@@ -107,6 +128,8 @@ export class LoftyOAuthProvider implements OAuthServerProvider {
     await saveRefreshToken(refreshToken, {
       clientId: data.clientId,
       encryptedApiKey: data.encryptedApiKey,
+      encryptedLoftyTokens: data.encryptedLoftyTokens,
+      authType,
       scopes: [],
     });
 
@@ -130,6 +153,15 @@ export class LoftyOAuthProvider implements OAuthServerProvider {
     // Rotate: delete old refresh token, issue new pair
     await deleteRefreshToken(refreshToken);
 
+    const authType = data.authType || "apikey";
+    let encryptedLoftyTokens = data.encryptedLoftyTokens;
+
+    // For OAuth sessions, proactively refresh Lofty tokens if needed
+    if (authType === "oauth" && encryptedLoftyTokens) {
+      const result = await maybeRefreshLoftyTokens(encryptedLoftyTokens);
+      encryptedLoftyTokens = result.encryptedLoftyTokens;
+    }
+
     const newAccessToken = generateToken();
     const newRefreshToken = generateToken();
     const expiresIn = 3600;
@@ -137,6 +169,8 @@ export class LoftyOAuthProvider implements OAuthServerProvider {
     await saveAccessToken(newAccessToken, {
       clientId: data.clientId,
       encryptedApiKey: data.encryptedApiKey,
+      encryptedLoftyTokens,
+      authType,
       scopes: data.scopes,
       expiresAt: Math.floor(Date.now() / 1000) + expiresIn,
     });
@@ -144,6 +178,8 @@ export class LoftyOAuthProvider implements OAuthServerProvider {
     await saveRefreshToken(newRefreshToken, {
       clientId: data.clientId,
       encryptedApiKey: data.encryptedApiKey,
+      encryptedLoftyTokens,
+      authType,
       scopes: data.scopes,
     });
 
@@ -166,6 +202,30 @@ export class LoftyOAuthProvider implements OAuthServerProvider {
       throw new Error("Access token has expired");
     }
 
+    const authType = data.authType || "apikey";
+
+    if (authType === "oauth" && data.encryptedLoftyTokens) {
+      // Lofty OAuth flow — decrypt tokens, refresh if needed
+      const result = await maybeRefreshLoftyTokens(data.encryptedLoftyTokens);
+
+      // If tokens were refreshed, update the stored access token data
+      if (result.refreshed) {
+        await saveAccessToken(token, {
+          ...data,
+          encryptedLoftyTokens: result.encryptedLoftyTokens,
+        });
+      }
+
+      return {
+        token,
+        clientId: data.clientId,
+        scopes: data.scopes,
+        expiresAt: data.expiresAt,
+        extra: { loftyAccessToken: result.tokens.accessToken, authType: "oauth" },
+      };
+    }
+
+    // API key flow (default / backward compatible)
     const loftyApiKey = decrypt(data.encryptedApiKey);
 
     return {
@@ -173,7 +233,7 @@ export class LoftyOAuthProvider implements OAuthServerProvider {
       clientId: data.clientId,
       scopes: data.scopes,
       expiresAt: data.expiresAt,
-      extra: { loftyApiKey },
+      extra: { loftyApiKey, authType: "apikey" },
     };
   }
 

@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { loftyRequest, success, error, getApiKeyFromAuth } from "../client.js";
+import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
 
 export function registerAgentsTools(server: McpServer) {
   server.tool(
@@ -18,12 +18,12 @@ export function registerAgentsTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: "/v1.0/agent/profile/add",
           body: params,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -42,12 +42,12 @@ export function registerAgentsTools(server: McpServer) {
     },
     async ({ agentId, ...body }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: `/v1.0/agent/${agentId}/tag/add`,
           body,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {

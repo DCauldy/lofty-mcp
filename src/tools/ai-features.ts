@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { loftyRequest, success, error, getApiKeyFromAuth } from "../client.js";
+import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
 
 export function registerAiFeaturesTools(server: McpServer) {
   server.tool(
@@ -12,11 +12,11 @@ export function registerAiFeaturesTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v2.0/ai/lead-analysis",
           params: params as Record<string, string | number | boolean | undefined>,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -33,12 +33,12 @@ export function registerAiFeaturesTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: "/v2.0/ai/lead-analysis",
           body: params,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -56,12 +56,12 @@ export function registerAiFeaturesTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: "/v2.0/ai/call-script",
           body: params,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -78,11 +78,11 @@ export function registerAiFeaturesTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v2.0/ai/call-summary",
           params: params as Record<string, string | number | boolean | undefined>,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -100,12 +100,12 @@ export function registerAiFeaturesTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: "/v2.0/ai/call-summary/generate",
           body: params,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -123,12 +123,12 @@ export function registerAiFeaturesTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: "/v2.0/ai/prepare-insight",
           body: params,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {

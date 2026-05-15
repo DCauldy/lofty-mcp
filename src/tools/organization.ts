@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { loftyRequest, success, error, getApiKeyFromAuth } from "../client.js";
+import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
 
 export function registerOrganizationTools(server: McpServer) {
   server.tool(
@@ -9,10 +9,10 @@ export function registerOrganizationTools(server: McpServer) {
     {},
     async (_params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v1.0/org",
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -35,12 +35,12 @@ export function registerOrganizationTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: "/v1.0/org/company",
           body: params,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -65,12 +65,12 @@ export function registerOrganizationTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "PUT",
           path: "/v1.0/org/office",
           body: params,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -96,12 +96,12 @@ export function registerOrganizationTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: "/v1.0/org/office",
           body: params,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -116,10 +116,10 @@ export function registerOrganizationTools(server: McpServer) {
     {},
     async (_params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v1.0/org/permission/profiles",
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {

@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { loftyRequest, success, error, getApiKeyFromAuth } from "../client.js";
+import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
 
 export function registerTasksV2Tools(server: McpServer) {
   server.tool(
@@ -11,11 +11,11 @@ export function registerTasksV2Tools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v2.0/tasks",
           params: params as Record<string, string | number | boolean | undefined>,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -32,10 +32,10 @@ export function registerTasksV2Tools(server: McpServer) {
     },
     async ({ taskId }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: `/v2.0/tasks/${taskId}`,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -59,12 +59,12 @@ export function registerTasksV2Tools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: "/v2.0/tasks",
           body: params,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -86,12 +86,12 @@ export function registerTasksV2Tools(server: McpServer) {
     },
     async ({ taskId, ...body }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "PUT",
           path: `/v2.0/tasks/${taskId}`,
           body,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -121,11 +121,11 @@ export function registerTasksV2Tools(server: McpServer) {
     },
     async ({ taskId }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: `/v2.0/tasks/${taskId}/finish`,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -142,11 +142,11 @@ export function registerTasksV2Tools(server: McpServer) {
     },
     async ({ taskId }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: `/v2.0/tasks/${taskId}/unfinish`,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -166,11 +166,11 @@ export function registerTasksV2Tools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v2.0/tasks/my-tasks",
           params: params as Record<string, string | number | boolean | undefined>,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {

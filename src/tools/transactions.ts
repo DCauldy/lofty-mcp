@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { loftyRequest, success, error, getApiKeyFromAuth } from "../client.js";
+import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
 
 export function registerTransactionsTools(server: McpServer) {
   server.tool(
@@ -11,10 +11,10 @@ export function registerTransactionsTools(server: McpServer) {
     },
     async ({ leadId }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: `/v1.0/leads/${leadId}/transactions`,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -32,10 +32,10 @@ export function registerTransactionsTools(server: McpServer) {
     },
     async ({ leadId, transactionId }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: `/v1.0/leads/${leadId}/transaction/${transactionId}`,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -62,12 +62,12 @@ export function registerTransactionsTools(server: McpServer) {
     },
     async ({ leadId, ...body }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: `/v1.0/leads/${leadId}/transaction`,
           body,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -93,12 +93,12 @@ export function registerTransactionsTools(server: McpServer) {
     },
     async ({ leadId, transactionId, ...body }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "PUT",
           path: `/v1.0/leads/${leadId}/transaction/${transactionId}`,
           body,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -116,10 +116,10 @@ export function registerTransactionsTools(server: McpServer) {
     },
     async ({ leadId, transactionId }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: `/v1.0/leads/${leadId}/transaction/${transactionId}/property/address`,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -144,12 +144,12 @@ export function registerTransactionsTools(server: McpServer) {
     },
     async ({ leadId, transactionId, ...body }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: `/v1.0/leads/${leadId}/transaction/property/address`,
           body: { transactionId, ...body },
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -169,11 +169,11 @@ export function registerTransactionsTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v2.0/transactions",
           params: params as Record<string, string | number | boolean | undefined>,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -188,10 +188,10 @@ export function registerTransactionsTools(server: McpServer) {
     {},
     async (_params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v1.0/transaction/customfields",
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {

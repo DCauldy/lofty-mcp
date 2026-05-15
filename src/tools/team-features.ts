@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { loftyRequest, success, error, getApiKeyFromAuth } from "../client.js";
+import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
 
 export function registerTeamFeaturesTools(server: McpServer) {
   server.tool(
@@ -9,10 +9,10 @@ export function registerTeamFeaturesTools(server: McpServer) {
     {},
     async (_params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v1.0/teamFeatures/listTag",
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -27,10 +27,10 @@ export function registerTeamFeaturesTools(server: McpServer) {
     {},
     async (_params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v1.0/teamFeatures/listCustomField",
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -50,12 +50,12 @@ export function registerTeamFeaturesTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: "/v1.0/teamFeatures/custom-field",
           body: params,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -70,10 +70,10 @@ export function registerTeamFeaturesTools(server: McpServer) {
     {},
     async (_params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v1.0/team-features/lead-ponds",
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -90,10 +90,10 @@ export function registerTeamFeaturesTools(server: McpServer) {
     },
     async ({ id }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: `/v1.0/team-features/lead-pond/${id}`,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {

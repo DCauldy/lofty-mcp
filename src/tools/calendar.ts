@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { loftyRequest, success, error, getApiKeyFromAuth } from "../client.js";
+import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
 
 export function registerCalendarTools(server: McpServer) {
   server.tool(
@@ -22,11 +22,11 @@ export function registerCalendarTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v2.0/calendar",
           params: params as Record<string, string | number | boolean | undefined>,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -53,12 +53,12 @@ export function registerCalendarTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: "/v2.0/calendar",
           body: params,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -83,12 +83,12 @@ export function registerCalendarTools(server: McpServer) {
     },
     async ({ calendarId, ...body }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "PUT",
           path: `/v2.0/calendar/${calendarId}`,
           body,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -118,11 +118,11 @@ export function registerCalendarTools(server: McpServer) {
     },
     async ({ calendarId }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: `/v2.0/calendar/${calendarId}/finish`,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -139,11 +139,11 @@ export function registerCalendarTools(server: McpServer) {
     },
     async ({ calendarId }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: `/v2.0/calendar/${calendarId}/unfinish`,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -165,11 +165,11 @@ export function registerCalendarTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v2.0/calendar/meetings/available",
           params: params as Record<string, string | number | boolean | undefined>,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {

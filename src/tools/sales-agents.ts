@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { loftyRequest, success, error, getApiKeyFromAuth } from "../client.js";
+import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
 
 export function registerSalesAgentsTools(server: McpServer) {
   server.tool(
@@ -9,10 +9,10 @@ export function registerSalesAgentsTools(server: McpServer) {
     {},
     async (_params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v2.0/sales-agents/current",
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -29,11 +29,11 @@ export function registerSalesAgentsTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v2.0/sales-agents/by-lead",
           params: params as Record<string, string | number | boolean | undefined>,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -48,10 +48,10 @@ export function registerSalesAgentsTools(server: McpServer) {
     {},
     async (_params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v2.0/sales-agents/quota",
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -72,11 +72,11 @@ export function registerSalesAgentsTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v2.0/working-leads",
           params: params as Record<string, string | number | boolean | undefined>,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -93,10 +93,10 @@ export function registerSalesAgentsTools(server: McpServer) {
     },
     async ({ leadId }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: `/v2.0/sales-agents/working-lead/${leadId}`,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -114,12 +114,12 @@ export function registerSalesAgentsTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: "/v2.0/working-leads/add",
           body: params,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -136,11 +136,11 @@ export function registerSalesAgentsTools(server: McpServer) {
     },
     async ({ leadId }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "PUT",
           path: `/v2.0/sales-agents/working-lead/${leadId}/mute`,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -155,10 +155,10 @@ export function registerSalesAgentsTools(server: McpServer) {
     {},
     async (_params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v2.0/sales-agent/settings",
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -187,12 +187,12 @@ export function registerSalesAgentsTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "PUT",
           path: "/v2.0/sales-agent/settings",
           body: params,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -209,11 +209,11 @@ export function registerSalesAgentsTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v2.0/sales-agent/lead/mute-status",
           params: params as Record<string, string | number | boolean | undefined>,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -230,10 +230,10 @@ export function registerSalesAgentsTools(server: McpServer) {
     },
     async ({ leadId }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: `/v2.0/plan-tasks/lead/${leadId}`,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -250,12 +250,12 @@ export function registerSalesAgentsTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: "/v2.0/plan-tasks/create",
           body: params,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -272,12 +272,12 @@ export function registerSalesAgentsTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: "/v2.0/sales-agent/ai-number/send-sms-to-agent",
           body: params,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {

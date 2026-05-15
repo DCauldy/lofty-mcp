@@ -13,11 +13,11 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that co
 
 ## Quick Start
 
-### Option 1: Claude.ai (Hosted on Vercel)
+### Option 1: Claude.ai / Claude Desktop (Hosted)
 
-1. Open **Claude.ai** > Settings > Connectors
-2. Click **Add Custom Connector**
-3. Enter the server URL: `https://lofty-mcp.vercel.app/mcp`
+1. Open **Claude.ai** > Settings > Connectors (or Claude Desktop > Settings > MCP Servers)
+2. Click **Add Custom Connector** (or **Add Custom MCP**)
+3. Enter the server URL: `https://lofty.aimarketingacademy.com/mcp`
 4. Complete the OAuth flow by entering your **Lofty API key**
 
 ### Option 2: Claude Desktop (Local stdio)
@@ -324,7 +324,7 @@ lofty-mcp/
 
 | Variable | Description |
 |----------|-------------|
-| `SERVER_URL` | Your deployed Vercel URL (e.g. `https://lofty-mcp.vercel.app`) |
+| `SERVER_URL` | Your deployed URL (e.g. `https://lofty.aimarketingacademy.com`) |
 | `ENCRYPTION_KEY` | 64-character hex string for encrypting API keys |
 | `KV_REST_API_URL` | Vercel KV REST API URL |
 | `KV_REST_API_TOKEN` | Vercel KV REST API token |

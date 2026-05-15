@@ -6,6 +6,7 @@ import type { OAuthClientInformationFull } from "@modelcontextprotocol/sdk/share
 const AUTH_CODE_TTL = 300; // 5 minutes
 const ACCESS_TOKEN_TTL = 3600; // 1 hour
 const REFRESH_TOKEN_TTL = 30 * 24 * 3600; // 30 days
+const OAUTH_SESSION_TTL = 600; // 10 minutes
 
 // KV key prefixes
 const PREFIX = {
@@ -13,6 +14,7 @@ const PREFIX = {
   authCode: "lofty-authcode:",
   token: "lofty-token:",
   refresh: "lofty-refresh:",
+  oauthSession: "lofty-oauthsession:",
 };
 
 function sha256(value: string): string {
@@ -39,6 +41,29 @@ export async function getClient(clientId: string): Promise<OAuthClientInformatio
   return typeof raw === "string" ? JSON.parse(raw) : raw;
 }
 
+// ─── Pending OAuth session (persists MCP params across Lofty OAuth redirect) ───
+
+export interface PendingOAuthSession {
+  clientId: string;
+  redirectUri: string;
+  codeChallenge: string;
+  state?: string;
+}
+
+export async function saveOAuthSession(sessionId: string, data: PendingOAuthSession): Promise<void> {
+  await kv.set(`${PREFIX.oauthSession}${sessionId}`, JSON.stringify(data), { ex: OAUTH_SESSION_TTL });
+}
+
+export async function getOAuthSession(sessionId: string): Promise<PendingOAuthSession | undefined> {
+  const raw = await kv.get<string>(`${PREFIX.oauthSession}${sessionId}`);
+  if (!raw) return undefined;
+  return typeof raw === "string" ? JSON.parse(raw) : raw;
+}
+
+export async function deleteOAuthSession(sessionId: string): Promise<void> {
+  await kv.del(`${PREFIX.oauthSession}${sessionId}`);
+}
+
 // ─── Auth code operations ───
 
 export interface AuthCodeData {
@@ -46,6 +71,8 @@ export interface AuthCodeData {
   redirectUri: string;
   codeChallenge: string;
   encryptedApiKey: string;
+  encryptedLoftyTokens?: string;
+  authType?: "apikey" | "oauth";
   state?: string;
 }
 
@@ -68,6 +95,8 @@ export async function deleteAuthCode(code: string): Promise<void> {
 export interface TokenData {
   clientId: string;
   encryptedApiKey: string;
+  encryptedLoftyTokens?: string;
+  authType?: "apikey" | "oauth";
   scopes: string[];
   expiresAt: number;
   refreshTokenHash?: string;
@@ -95,6 +124,8 @@ export async function deleteAccessToken(token: string): Promise<void> {
 export interface RefreshTokenData {
   clientId: string;
   encryptedApiKey: string;
+  encryptedLoftyTokens?: string;
+  authType?: "apikey" | "oauth";
   scopes: string[];
 }
 

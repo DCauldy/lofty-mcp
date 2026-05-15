@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { loftyRequest, success, error, getApiKeyFromAuth } from "../client.js";
+import { loftyRequest, success, error, getLoftyAuthOptions } from "../client.js";
 
 export function registerLeadsTools(server: McpServer) {
   server.tool(
@@ -26,11 +26,11 @@ export function registerLeadsTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: "/v1.0/leads",
           params: params as Record<string, string | number | boolean | undefined>,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -48,11 +48,11 @@ export function registerLeadsTools(server: McpServer) {
     },
     async ({ leadId, withTrash }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: `/v1.0/leads/${leadId}`,
           params: withTrash !== undefined ? { withTrash } : undefined,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -87,12 +87,12 @@ export function registerLeadsTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: "/v1.0/leads",
           body: params,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -125,13 +125,18 @@ export function registerLeadsTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        if (params.tags && params.tags.length === 0) {
+          return error(new Error(
+            "Sending an empty tags array would remove all tags from this lead. This operation is blocked for safety. To remove all tags, please do so directly in Lofty CRM."
+          ));
+        }
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const { leadId, ...body } = params;
         const data = await loftyRequest({
           method: "PUT",
           path: `/v1.0/leads/${leadId}`,
           body,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -163,12 +168,12 @@ export function registerLeadsTools(server: McpServer) {
     },
     async ({ leadId, ...body }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: `/v1.0/leads/${leadId}/assignment`,
           body,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -189,11 +194,11 @@ export function registerLeadsTools(server: McpServer) {
     },
     async ({ leadId, ...params }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           path: `/v2.0/leads/${leadId}/activities`,
           params: params as Record<string, string | number | boolean | undefined>,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -217,12 +222,12 @@ export function registerLeadsTools(server: McpServer) {
     },
     async ({ leadId, ...body }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: `/v1.0/leads/${leadId}/activity`,
           body,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -244,12 +249,12 @@ export function registerLeadsTools(server: McpServer) {
     },
     async ({ leadId, ...body }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: `/v1.0/leads/${leadId}/inquiry`,
           body,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -276,12 +281,12 @@ export function registerLeadsTools(server: McpServer) {
     },
     async ({ leadId, ...body }, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: `/v1.0/leads/${leadId}/property`,
           body,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {
@@ -301,12 +306,12 @@ export function registerLeadsTools(server: McpServer) {
     },
     async (params, extra) => {
       try {
-        const apiKey = getApiKeyFromAuth(extra.authInfo);
+        const authOpts = getLoftyAuthOptions(extra.authInfo);
         const data = await loftyRequest({
           method: "POST",
           path: "/v1.0/leads/assignee",
           body: params,
-          apiKey,
+          ...authOpts,
         });
         return success(data);
       } catch (e) {

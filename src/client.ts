@@ -3,8 +3,11 @@ import type { ToolResponse } from "./types.js";
 
 const BASE_URL = "https://api.lofty.com";
 
-function getAuthHeader(apiKey?: string): string {
-  const key = apiKey || process.env.LOFTY_API_KEY;
+function getAuthHeader(opts?: { apiKey?: string; accessToken?: string }): string {
+  if (opts?.accessToken) {
+    return `Bearer ${opts.accessToken}`;
+  }
+  const key = opts?.apiKey || process.env.LOFTY_API_KEY;
   if (!key) {
     throw new Error("LOFTY_API_KEY environment variable is not set");
   }
@@ -17,18 +20,35 @@ export interface RequestOptions {
   params?: Record<string, string | number | boolean | undefined>;
   body?: unknown;
   apiKey?: string;
+  accessToken?: string;
 }
 
 /**
  * Extracts the Lofty API key from MCP AuthInfo (populated in hosted/OAuth mode).
  * Returns undefined when running in stdio mode (no authInfo present).
+ * Kept for backward compat with stdio mode.
  */
 export function getApiKeyFromAuth(authInfo?: AuthInfo): string | undefined {
   return authInfo?.extra?.loftyApiKey as string | undefined;
 }
 
+/**
+ * Returns auth options for loftyRequest() based on the auth type in MCP AuthInfo.
+ * - For OAuth: returns { accessToken }
+ * - For API key: returns { apiKey }
+ * - For stdio mode (no authInfo): returns {} (uses LOFTY_API_KEY env var)
+ */
+export function getLoftyAuthOptions(authInfo?: AuthInfo): { apiKey?: string; accessToken?: string } {
+  if (!authInfo?.extra) return {};
+  const authType = authInfo.extra.authType as string | undefined;
+  if (authType === "oauth") {
+    return { accessToken: authInfo.extra.loftyAccessToken as string };
+  }
+  return { apiKey: authInfo.extra.loftyApiKey as string | undefined };
+}
+
 export async function loftyRequest(options: RequestOptions): Promise<unknown> {
-  const { method = "GET", path, params, body, apiKey } = options;
+  const { method = "GET", path, params, body, apiKey, accessToken } = options;
 
   const url = new URL(`${BASE_URL}${path}`);
   if (params) {
@@ -40,7 +60,7 @@ export async function loftyRequest(options: RequestOptions): Promise<unknown> {
   }
 
   const headers: Record<string, string> = {
-    Authorization: getAuthHeader(apiKey),
+    Authorization: getAuthHeader({ apiKey, accessToken }),
     "Content-Type": "application/json",
     Accept: "application/json",
   };
