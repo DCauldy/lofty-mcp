@@ -60,7 +60,12 @@ class Logger {
       service: this.service,
       ...extra,
     };
-    process.stderr.write(JSON.stringify(entry) + "\n");
+    const line = JSON.stringify(entry) + "\n";
+    if (level === "error") {
+      process.stderr.write(line);
+    } else {
+      process.stdout.write(line);
+    }
   }
 }
 
