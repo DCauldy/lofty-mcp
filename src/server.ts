@@ -1,16 +1,19 @@
 import express from "express";
+import type { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { mcpAuthRouter } from "@modelcontextprotocol/sdk/server/auth/router.js";
 import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
 import { randomUUID } from "node:crypto";
+import { kv } from "@vercel/kv";
 
 import { LoftyOAuthProvider } from "./auth/provider.js";
 import { encrypt } from "./auth/crypto.js";
 import {
   saveAuthCode,
   generateAuthCode,
+  getClient,
   saveOAuthSession,
   getOAuthSession,
   deleteOAuthSession,
@@ -81,7 +84,46 @@ const serverUrl = (process.env.SERVER_URL || "http://localhost:3000").trim();
 const provider = new LoftyOAuthProvider();
 
 const app = express();
-app.use(cors());
+
+// CORS — restrict to known origins
+const allowedOrigins = [
+  serverUrl,
+  "https://claude.ai",
+  "https://console.anthropic.com",
+  "http://localhost:3000",
+  "http://localhost:5173",
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (server-to-server, curl, MCP clients)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.some((o) => origin.startsWith(o))) return callback(null, true);
+    callback(null, false);
+  },
+  credentials: true,
+}));
+
+// Rate limiting backed by Vercel KV (no extra dependencies)
+async function checkRateLimit(key: string, maxAttempts: number, windowSeconds: number): Promise<boolean> {
+  const kvKey = `lofty-ratelimit:${key}`;
+  const current = await kv.incr(kvKey);
+  if (current === 1) {
+    await kv.expire(kvKey, windowSeconds);
+  }
+  return current <= maxAttempts;
+}
+
+function rateLimiter(prefix: string, maxAttempts: number, windowSeconds: number) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const ip = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.ip || "unknown";
+    const allowed = await checkRateLimit(`${prefix}:${ip}`, maxAttempts, windowSeconds);
+    if (!allowed) {
+      res.status(429).json({ error: "Too many requests. Please try again later." });
+      return;
+    }
+    next();
+  };
+}
 
 // Health check
 app.get("/health", (_req, res) => {
@@ -137,13 +179,28 @@ app.use(
 );
 
 // Custom callback endpoint: validates Lofty API key, stores auth code, redirects
-app.post("/auth/callback", express.urlencoded({ extended: false }), async (req, res) => {
+app.post("/auth/callback", rateLimiter("auth-callback", 10, 300), express.urlencoded({ extended: false }), async (req, res) => {
   try {
     const { apiKey, client_id, redirect_uri, code_challenge, state } = req.body;
 
     if (!apiKey || !client_id || !redirect_uri || !code_challenge) {
       res.status(400).send(
         getAuthorizePage(client_id || "", redirect_uri || "", state, code_challenge || "", "All fields are required.")
+      );
+      return;
+    }
+
+    // Validate redirect_uri against registered client
+    const client = await getClient(client_id);
+    if (!client) {
+      res.status(400).send(
+        getAuthorizePage(client_id, redirect_uri, state, code_challenge, "Unknown client. Please try connecting again.")
+      );
+      return;
+    }
+    if (!client.redirect_uris.includes(redirect_uri)) {
+      res.status(400).send(
+        getAuthorizePage(client_id, redirect_uri, state, code_challenge, "Invalid redirect URI.")
       );
       return;
     }
@@ -183,16 +240,15 @@ app.post("/auth/callback", express.urlencoded({ extended: false }), async (req, 
 
     res.redirect(302, redirectUrl.toString());
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("Auth callback error:", message, err);
-    res.status(500).send(`Internal server error during authentication: ${message}`);
+    console.error("Auth callback error:", err);
+    res.status(500).send("Internal server error during authentication. Please try again.");
   }
 });
 
 // ─── Lofty OAuth routes ───
 
 // Step 1: Start Lofty OAuth flow — persist MCP state, redirect to Lofty
-app.get("/oauth/start", async (req, res) => {
+app.get("/oauth/start", rateLimiter("oauth-start", 10, 300), async (req, res) => {
   try {
     const { client_id, redirect_uri, code_challenge, state } = req.query as Record<string, string>;
     const loftyOAuthClientId = process.env.LOFTY_OAUTH_CLIENT_ID;
@@ -225,14 +281,13 @@ app.get("/oauth/start", async (req, res) => {
 
     res.redirect(302, loftyAuthUrl.toString());
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("OAuth start error:", message, err);
-    res.status(500).send(`Internal server error: ${message}`);
+    console.error("OAuth start error:", err);
+    res.status(500).send("Internal server error. Please try again.");
   }
 });
 
 // Step 2: Lofty redirects back here with auth code — exchange for tokens, complete MCP flow
-app.get("/oauth/callback", async (req, res) => {
+app.get("/oauth/callback", rateLimiter("oauth-callback", 10, 300), async (req, res) => {
   try {
     const { code: loftyCode, state: sessionId } = req.query as Record<string, string>;
 
@@ -338,9 +393,8 @@ h1{color:#c00;margin-bottom:12px;} p{color:#666;}</style></head>
 
     res.redirect(302, redirectUrl.toString());
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("OAuth callback error:", message, err);
-    res.status(500).send(`Internal server error during OAuth callback: ${message}`);
+    console.error("OAuth callback error:", err);
+    res.status(500).send("Internal server error during OAuth callback. Please try again.");
   }
 });
 

@@ -1,3 +1,12 @@
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export function getAuthorizePage(
   clientId: string,
   redirectUri: string,
@@ -7,6 +16,13 @@ export function getAuthorizePage(
   oauthStartUrl?: string
 ): string {
   const showOAuth = !!oauthStartUrl;
+
+  const safeClientId = escapeHtml(clientId);
+  const safeRedirectUri = escapeHtml(redirectUri);
+  const safeState = state ? escapeHtml(state) : undefined;
+  const safeCodeChallenge = escapeHtml(codeChallenge);
+  const safeError = errorMessage ? escapeHtml(errorMessage) : undefined;
+  const safeOauthUrl = oauthStartUrl ? escapeHtml(oauthStartUrl) : undefined;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -117,19 +133,19 @@ export function getAuthorizePage(
     </div>
     <h1>Connect Lofty CRM</h1>
     <p class="subtitle">Connect your Lofty CRM account to get started.</p>
-    ${errorMessage ? `<div class="error">${errorMessage}</div>` : ""}
+    ${safeError ? `<div class="error">${safeError}</div>` : ""}
     ${showOAuth ? `
-    <a href="${oauthStartUrl}" class="btn-primary btn-oauth">Sign in with Lofty</a>
+    <a href="${safeOauthUrl}" class="btn-primary btn-oauth">Sign in with Lofty</a>
     <div class="divider">or</div>
     ` : ""}
     <form method="POST" action="/auth/callback">
       <label for="apiKey">API Key</label>
       <input type="text" id="apiKey" name="apiKey" placeholder="your-lofty-api-key" required autocomplete="off" />
       <p class="help">Find your API key in Lofty under Settings &gt; API. Your key is encrypted and stored securely.</p>
-      <input type="hidden" name="client_id" value="${clientId}" />
-      <input type="hidden" name="redirect_uri" value="${redirectUri}" />
-      <input type="hidden" name="code_challenge" value="${codeChallenge}" />
-      ${state ? `<input type="hidden" name="state" value="${state}" />` : ""}
+      <input type="hidden" name="client_id" value="${safeClientId}" />
+      <input type="hidden" name="redirect_uri" value="${safeRedirectUri}" />
+      <input type="hidden" name="code_challenge" value="${safeCodeChallenge}" />
+      ${safeState ? `<input type="hidden" name="state" value="${safeState}" />` : ""}
       <button type="submit" class="btn-submit">Connect with API Key</button>
     </form>
   </div>
