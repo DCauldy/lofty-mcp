@@ -7,6 +7,7 @@ import { mcpAuthRouter } from "@modelcontextprotocol/sdk/server/auth/router.js";
 import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
 import { randomUUID } from "node:crypto";
 import { kv } from "@vercel/kv";
+import { createLogger, requestInstrumentation } from "./logger.js";
 
 import { LoftyOAuthProvider } from "./auth/provider.js";
 import { encrypt } from "./auth/crypto.js";
@@ -102,6 +103,9 @@ app.use(cors({
   },
   credentials: true,
 }));
+
+const logger = createLogger("lofty-mcp");
+app.use(requestInstrumentation());
 
 // Rate limiting backed by Vercel KV (no extra dependencies)
 async function checkRateLimit(key: string, maxAttempts: number, windowSeconds: number): Promise<boolean> {
@@ -239,8 +243,16 @@ app.post("/auth/callback", rateLimiter("auth-callback", 10, 300), express.urlenc
     if (state) redirectUrl.searchParams.set("state", state);
 
     res.redirect(302, redirectUrl.toString());
+
+    res.on("finish", () => {
+      logger.info("Request completed", {
+        ...logger.fromReq(req),
+        statusCode: res.statusCode,
+        durationMs: req.startTime ? Date.now() - req.startTime : undefined,
+      });
+    });
   } catch (err) {
-    console.error("Auth callback error:", err);
+    logger.error("Auth callback error", { ...logger.fromReq(req), error: String(err) });
     res.status(500).send("Internal server error during authentication. Please try again.");
   }
 });
@@ -280,8 +292,16 @@ app.get("/oauth/start", rateLimiter("oauth-start", 10, 300), async (req, res) =>
     loftyAuthUrl.searchParams.set("state", sessionId);
 
     res.redirect(302, loftyAuthUrl.toString());
+
+    res.on("finish", () => {
+      logger.info("Request completed", {
+        ...logger.fromReq(req),
+        statusCode: res.statusCode,
+        durationMs: req.startTime ? Date.now() - req.startTime : undefined,
+      });
+    });
   } catch (err) {
-    console.error("OAuth start error:", err);
+    logger.error("OAuth start error", { ...logger.fromReq(req), error: String(err) });
     res.status(500).send("Internal server error. Please try again.");
   }
 });
@@ -342,7 +362,7 @@ h1{color:#c00;margin-bottom:12px;} p{color:#666;}</style></head>
 
     if (!tokenRes.ok) {
       const errText = await tokenRes.text();
-      console.error("Lofty token exchange failed:", tokenRes.status, errText);
+      logger.error("Upstream token exchange failed", { ...logger.fromReq(req), statusCode: tokenRes.status, error: errText });
       res.status(500).send("Failed to exchange authorization code with Lofty. Please try again.");
       return;
     }
@@ -362,7 +382,7 @@ h1{color:#c00;margin-bottom:12px;} p{color:#666;}</style></head>
     });
 
     if (!meRes.ok) {
-      console.error("Lofty /me check failed:", meRes.status);
+      logger.error("Lofty /me check failed", { ...logger.fromReq(req), statusCode: meRes.status });
       res.status(500).send("Failed to verify Lofty authorization. Please try again.");
       return;
     }
@@ -392,8 +412,16 @@ h1{color:#c00;margin-bottom:12px;} p{color:#666;}</style></head>
     if (mcpSession.state) redirectUrl.searchParams.set("state", mcpSession.state);
 
     res.redirect(302, redirectUrl.toString());
+
+    res.on("finish", () => {
+      logger.info("Request completed", {
+        ...logger.fromReq(req),
+        statusCode: res.statusCode,
+        durationMs: req.startTime ? Date.now() - req.startTime : undefined,
+      });
+    });
   } catch (err) {
-    console.error("OAuth callback error:", err);
+    logger.error("OAuth callback error", { ...logger.fromReq(req), error: String(err) });
     res.status(500).send("Internal server error during OAuth callback. Please try again.");
   }
 });
@@ -416,8 +444,16 @@ app.all("/mcp", bearerAuth, async (req, res) => {
       transport.close().catch(() => {});
       server.close().catch(() => {});
     });
+
+    res.on("finish", () => {
+      logger.info("Request completed", {
+        ...logger.fromReq(req),
+        statusCode: res.statusCode,
+        durationMs: req.startTime ? Date.now() - req.startTime : undefined,
+      });
+    });
   } catch (err) {
-    console.error("MCP error:", err);
+    logger.error("MCP request error", { ...logger.fromReq(req), error: String(err) });
     if (!res.headersSent) {
       res.status(500).json({ error: "Internal server error" });
     }
@@ -500,6 +536,6 @@ export { app };
 const port = process.env.PORT || 3000;
 if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
   app.listen(port, () => {
-    console.error(`Lofty MCP Server listening on port ${port}`);
+    logger.info("Server started", { port: Number(port) });
   });
 }

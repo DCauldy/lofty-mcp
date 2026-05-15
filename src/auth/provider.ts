@@ -10,6 +10,7 @@ import type {
 import { randomUUID } from "node:crypto";
 import { decrypt } from "./crypto.js";
 import { maybeRefreshLoftyTokens } from "./lofty-oauth.js";
+import { createLogger } from "../logger.js";
 import {
   saveClient,
   getClient,
@@ -26,6 +27,8 @@ import {
   generateAuthCode,
 } from "./store.js";
 import { getAuthorizePage } from "./pages.js";
+
+const logger = createLogger("lofty-mcp");
 
 /**
  * Clients store backed by Vercel KV. Supports dynamic client registration.
@@ -158,6 +161,7 @@ export class LoftyOAuthProvider implements OAuthServerProvider {
 
     // For OAuth sessions, proactively refresh Lofty tokens if needed
     if (authType === "oauth" && encryptedLoftyTokens) {
+      logger.info("Upstream token refresh during MCP token rotation", { authType: "oauth", clientId: data.clientId });
       const result = await maybeRefreshLoftyTokens(encryptedLoftyTokens);
       encryptedLoftyTokens = result.encryptedLoftyTokens;
     }
@@ -210,6 +214,7 @@ export class LoftyOAuthProvider implements OAuthServerProvider {
 
       // If tokens were refreshed, update the stored access token data
       if (result.refreshed) {
+        logger.info("Upstream token refreshed during verify", { authType: "oauth", clientId: data.clientId });
         await saveAccessToken(token, {
           ...data,
           encryptedLoftyTokens: result.encryptedLoftyTokens,
