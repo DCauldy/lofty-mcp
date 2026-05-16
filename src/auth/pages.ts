@@ -129,7 +129,7 @@ export function getAuthorizePage(
     <div class="logos">
       <img src="/logo.svg" alt="AiM Marketing Academy" style="height: 44px;" />
       <span>&times;</span>
-      <img src="/product-logo.svg" alt="Lofty CRM" style="height: 32px;" />
+      <span style="font-size: 20px; font-weight: 700; color: #1a1a1a;">Lofty CRM</span>
     </div>
     <h1>Connect Lofty CRM</h1>
     <p class="subtitle">Connect your Lofty CRM account to get started.</p>
@@ -141,7 +141,8 @@ export function getAuthorizePage(
     <form method="POST" action="/auth/callback">
       <label for="apiKey">API Key</label>
       <input type="text" id="apiKey" name="apiKey" placeholder="your-lofty-api-key" required autocomplete="off" />
-      <p class="help">Find your API key in Lofty under Settings &gt; API. Your key is encrypted and stored securely.</p>
+      <p class="help">Find your API key in Lofty under Settings &gt; API. Your key is encrypted (AES-256-GCM) and stored securely for up to 30 days.</p>
+      <p class="help" style="margin-top: 8px;">By connecting, you acknowledge that API responses will be processed by Claude (Anthropic) within your conversations. No data is stored or used for AI training. <a href="/privacy" target="_blank">Privacy Policy</a></p>
       <input type="hidden" name="client_id" value="${safeClientId}" />
       <input type="hidden" name="redirect_uri" value="${safeRedirectUri}" />
       <input type="hidden" name="code_challenge" value="${safeCodeChallenge}" />

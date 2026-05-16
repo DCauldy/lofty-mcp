@@ -5,7 +5,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { mcpAuthRouter } from "@modelcontextprotocol/sdk/server/auth/router.js";
 import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import { kv } from "@vercel/kv";
 import { createLogger, requestInstrumentation } from "./logger.js";
 
@@ -18,6 +18,8 @@ import {
   saveOAuthSession,
   getOAuthSession,
   deleteOAuthSession,
+  deleteAccessToken,
+  deleteRefreshToken,
 } from "./auth/store.js";
 import { getAuthorizePage } from "./auth/pages.js";
 
@@ -42,7 +44,7 @@ import { registerAiFeaturesTools } from "./tools/ai-features.js";
 import { registerSalesAgentsTools } from "./tools/sales-agents.js";
 import { registerNotificationsTools } from "./tools/notifications.js";
 import { registerIdentityTools } from "./tools/identity.js";
-import { AIM_FAVICON_BUF, AIM_LOGO_SVG, LOFTY_LOGO_SVG } from "./branding.js";
+import { AIM_FAVICON_BUF, AIM_LOGO_SVG } from "./branding.js";
 
 /**
  * Creates a fresh McpServer instance with all tools registered.
@@ -129,6 +131,19 @@ function rateLimiter(prefix: string, maxAttempts: number, windowSeconds: number)
   };
 }
 
+async function mcpRateLimit(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const authHeader = req.headers.authorization || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "");
+  if (!token) { next(); return; }
+  const tokenHash = createHash("sha256").update(token).digest("hex").slice(0, 16);
+  const allowed = await checkRateLimit(`mcp:${tokenHash}`, 60, 60);
+  if (!allowed) {
+    res.status(429).json({ error: "Rate limit exceeded. Max 60 requests per minute." });
+    return;
+  }
+  next();
+}
+
 // Health check
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", server: "lofty-mcp" });
@@ -150,10 +165,149 @@ app.get("/logo.svg", (_req, res) => {
   res.setHeader("Cache-Control", "public, max-age=86400");
   res.send(AIM_LOGO_SVG);
 });
-app.get("/product-logo.svg", (_req, res) => {
-  res.setHeader("Content-Type", "image/svg+xml");
-  res.setHeader("Cache-Control", "public, max-age=86400");
-  res.send(LOFTY_LOGO_SVG);
+
+app.get("/privacy", (_req, res) => {
+  res.setHeader("Content-Type", "text/html");
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — Lofty CRM MCP Server</title>
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 40px 20px; line-height: 1.7; color: #333; }
+    .container { max-width: 720px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 48px; }
+    h1 { font-size: 24px; margin-bottom: 8px; }
+    .updated { color: #666; font-size: 13px; margin-bottom: 32px; }
+    h2 { font-size: 18px; margin-top: 28px; margin-bottom: 12px; color: #1a1a1a; }
+    p, li { font-size: 14px; margin-bottom: 12px; }
+    ul { padding-left: 20px; margin-bottom: 16px; }
+    .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: May 2026</p>
+
+    <p>This privacy policy describes how the Lofty CRM MCP Server operated by AiM Marketing Academy ("we", "us") handles your data.</p>
+
+    <h2>What We Collect</h2>
+    <ul>
+      <li><strong>API Credentials:</strong> Your Lofty API key or OAuth tokens, encrypted with AES-256-GCM and stored in our secure key-value store (Upstash Redis via Vercel KV).</li>
+      <li><strong>Session Metadata:</strong> OAuth client registration data (client ID, redirect URIs) required by the MCP protocol.</li>
+    </ul>
+    <p>We do <strong>not</strong> store any CRM data (contacts, leads, transactions, etc.). All CRM data is passed through in real-time and is never persisted on our servers.</p>
+
+    <h2>How Your Data Flows</h2>
+    <ul>
+      <li>When you use this MCP server through Claude, your requests are sent from Claude (Anthropic) to our server.</li>
+      <li>Our server decrypts your stored credentials and makes API calls to Lofty on your behalf.</li>
+      <li>Lofty API responses are returned to Claude for processing within your conversation.</li>
+      <li>No CRM data is logged, cached, or retained by our server.</li>
+    </ul>
+
+    <h2>AI Training Disclosure</h2>
+    <p><strong>Your data is NOT used to train any AI models.</strong> Neither AiM Marketing Academy, Anthropic (Claude), nor any sub-processor in our data flow uses your CRM data for AI model training, fine-tuning, or improvement purposes. Anthropic's API terms explicitly exclude API conversation data from model training.</p>
+
+    <h2>Sub-Processors</h2>
+    <ul>
+      <li><strong>Vercel</strong> — Hosts our server infrastructure (serverless functions)</li>
+      <li><strong>Upstash</strong> — Provides encrypted key-value storage (Redis) for credential storage</li>
+      <li><strong>Anthropic</strong> — Operates Claude, which processes API responses within your conversation context</li>
+    </ul>
+
+    <h2>Data Retention</h2>
+    <ul>
+      <li>Encrypted API credentials: Up to 30 days (refresh token lifetime)</li>
+      <li>Access tokens: 1 hour</li>
+      <li>CRM data: Zero retention (real-time pass-through only)</li>
+    </ul>
+
+    <h2>Your Rights</h2>
+    <ul>
+      <li>You may revoke access at any time by disconnecting in Claude Desktop or revoking your API key in Lofty.</li>
+      <li>You may request immediate deletion of your stored credentials via our <a href="/delete-credentials">self-service deletion page</a> or by contacting us.</li>
+      <li>Upon disconnection, your encrypted credentials are automatically purged when they expire.</li>
+    </ul>
+
+    <h2>Security</h2>
+    <p>All credentials are encrypted at rest with AES-256-GCM. All communications use TLS 1.2+. Token lookups use SHA-256 hashing. We implement PKCE (S256) for OAuth flows.</p>
+
+    <h2>Disclaimers</h2>
+    <ul>
+      <li>AI-generated output should not be used for housing, credit, employment, or other material decisions about individuals without independent verification.</li>
+      <li>Users are responsible for ensuring their use complies with applicable MLS rules, TCPA, CAN-SPAM, Fair Housing Act, and their CRM's terms of service.</li>
+      <li>AI output should be reviewed before sending to clients or contacts.</li>
+    </ul>
+
+    <h2>Contact</h2>
+    <p>For privacy inquiries or credential deletion requests, contact AiM Marketing Academy at support@aimarketingacademy.com.</p>
+
+    <div class="footer">
+      <p>AiM Marketing Academy &bull; Lofty CRM MCP Server</p>
+    </div>
+  </div>
+</body>
+</html>`);
+});
+
+// Self-service credential deletion
+app.get("/delete-credentials", (_req, res) => {
+  res.setHeader("Content-Type", "text/html");
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Delete Credentials — Lofty CRM MCP Server</title>
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+    .card { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 40px; max-width: 480px; width: 100%; }
+    h1 { font-size: 22px; margin-bottom: 12px; color: #1a1a1a; }
+    p { font-size: 14px; color: #555; line-height: 1.6; margin-bottom: 16px; }
+    label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; color: #333; }
+    input[type="text"] { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; font-family: monospace; margin-bottom: 16px; }
+    input[type="text"]:focus { outline: none; border-color: #d9534f; box-shadow: 0 0 0 3px rgba(217,83,79,0.1); }
+    .btn-delete { display: block; width: 100%; padding: 12px; background: #d9534f; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; }
+    .btn-delete:hover { background: #c9302c; }
+    .info { background: #f8f9fa; border: 1px solid #eee; border-radius: 6px; padding: 12px; font-size: 13px; color: #666; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Delete Stored Credentials</h1>
+    <p>If you previously connected your Lofty CRM account and want to immediately remove your stored credentials from our system, enter your access token or refresh token below.</p>
+    <div class="info">Your encrypted credentials will be permanently deleted from our servers. This action cannot be undone. You can reconnect at any time by going through the auth flow again.</div>
+    <form method="POST" action="/delete-credentials">
+      <label for="token">Access Token or Refresh Token</label>
+      <input type="text" id="token" name="token" placeholder="your-token-here" required autocomplete="off" />
+      <button type="submit" class="btn-delete">Delete My Credentials</button>
+    </form>
+  </div>
+</body>
+</html>`);
+});
+
+app.post("/delete-credentials", express.urlencoded({ extended: false }), async (req, res) => {
+  const token = req.body?.token?.trim();
+  if (!token) {
+    res.status(400).json({ error: "Token is required" });
+    return;
+  }
+  try {
+    await deleteAccessToken(token);
+    await deleteRefreshToken(token);
+    res.setHeader("Content-Type", "text/html");
+    res.send(`<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Credentials Deleted</title><link rel="icon" type="image/png" href="/favicon.png" /><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f5f5;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}.card{background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);padding:40px;max-width:480px;width:100%;text-align:center}h1{font-size:22px;margin-bottom:12px;color:#1a1a1a}p{font-size:14px;color:#555;line-height:1.6}.success{color:#1e7e34;font-size:48px;margin-bottom:16px}</style></head><body><div class="card"><div class="success">&#10003;</div><h1>Credentials Deleted</h1><p>Any stored credentials associated with that token have been permanently removed from our servers.</p></div></body></html>`);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete credentials" });
+  }
 });
 
 // OAuth metadata with logo_uri (registered before mcpAuthRouter so it takes priority)
@@ -427,7 +581,7 @@ h1{color:#c00;margin-bottom:12px;} p{color:#666;}</style></head>
 const bearerAuth = requireBearerAuth({ verifier: provider });
 
 // MCP endpoint — stateless: new transport + server per request
-app.all("/mcp", bearerAuth, async (req, res) => {
+app.all("/mcp", bearerAuth, mcpRateLimit, async (req, res) => {
   res.on("finish", () => {
     logger.info("Request completed", {
       ...logger.fromReq(req),
@@ -502,7 +656,7 @@ app.get("/", (_req, res) => {
     <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 24px;">
       <img src="/logo.svg" alt="AiM Marketing Academy" style="height: 44px;" />
       <span style="font-size: 22px; color: #bbb; font-weight: 300;">&times;</span>
-      <img src="/product-logo.svg" alt="Lofty CRM" style="height: 32px;" />
+      <span style="font-size: 22px; font-weight: 700; color: #1a1a1a;">Lofty CRM</span>
     </div>
     <span class="status">Online</span>
     <h1>Lofty CRM MCP Server</h1>
@@ -515,7 +669,7 @@ app.get("/", (_req, res) => {
       <li>Complete the OAuth flow by <strong>signing in with Lofty</strong> or entering your <strong>Lofty API key</strong></li>
     </ol>
     <div class="footer">
-      <a href="https://developer.lofty.com" target="_blank">Lofty API Documentation</a>
+      <a href="https://developer.lofty.com" target="_blank">Lofty API Documentation</a> &bull; <a href="/privacy">Privacy Policy</a>
     </div>
   </div>
 </body>

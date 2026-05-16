@@ -6,7 +6,7 @@ import { sendMessage } from "../annotations.js";
 export function registerNotificationsTools(server: McpServer) {
   server.tool(
     "lofty_send_email_to_agent",
-    "WARNING: This sends a REAL email to the agent. Send a system email notification to the agent in Lofty CRM.",
+    "⚠️ SENDS REAL MESSAGE: Send a system email notification to the agent in Lofty CRM. This delivers a real email. Confirm with the user before proceeding.",
     {
       subject: z.string().describe("Email subject"),
       content: z.string().describe("Email body content (HTML supported)"),
@@ -30,7 +30,7 @@ export function registerNotificationsTools(server: McpServer) {
 
   server.tool(
     "lofty_send_sms_to_agent",
-    "WARNING: This sends a REAL SMS to the agent. Send a system SMS notification to the agent in Lofty CRM.",
+    "⚠️ SENDS REAL MESSAGE: Send a system SMS notification to the agent in Lofty CRM. This delivers a real SMS. Confirm with the user before proceeding.",
     {
       content: z.string().describe("SMS content"),
     },
@@ -53,7 +53,7 @@ export function registerNotificationsTools(server: McpServer) {
 
   server.tool(
     "lofty_send_task_reminder_push",
-    "Send a task reminder push notification in Lofty CRM.",
+    "⚠️ SENDS REAL MESSAGE: Send a task reminder push notification in Lofty CRM. This delivers a real push notification. Confirm with the user before proceeding.",
     {
       taskId: z.number().describe("Task ID or Appointment ID"),
       type: z.enum(["TASK", "APPOINTMENT"]).describe("Type: TASK or APPOINTMENT"),
